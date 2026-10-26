@@ -3,7 +3,8 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/nav_graph"
-    app:startDestination="@id/homeFragment2">
+    app:startDestination="@id/loginFragment">
+
     <fragment
         android:id="@+id/libraryFragment"
         android:name="com.example.storyverse.ui.library.LibraryFragment"
@@ -13,6 +14,7 @@
             android:id="@+id/action_libraryFragment_to_storyDetailFragment"
             app:destination="@id/storyDetailFragment" />
     </fragment>
+
     <fragment
         android:id="@+id/homeFragment2"
         android:name="com.example.storyverse.ui.home.HomeFragment"
@@ -40,6 +42,7 @@
             android:id="@+id/action_homeFragment2_to_storyDetailFragment4"
             app:destination="@id/storyDetailFragment" />
     </fragment>
+
     <fragment
         android:id="@+id/profileFragment"
         android:name="com.example.storyverse.ui.profile.ProfileFragment"
@@ -49,6 +52,7 @@
             android:id="@+id/action_profileFragment_to_settingsFragment"
             app:destination="@id/settingsFragment" />
     </fragment>
+
     <fragment
         android:id="@+id/searchFragment"
         android:name="com.example.storyverse.ui.search.SearchFragment"
@@ -58,21 +62,25 @@
             android:id="@+id/action_searchFragment_to_storyDetailFragment"
             app:destination="@id/storyDetailFragment" />
     </fragment>
+
     <fragment
         android:id="@+id/exploreFragment"
         android:name="com.example.storyverse.ui.explore.ExploreFragment"
         android:label="fragment_explore"
         tools:layout="@layout/fragment_explore" />
+
     <fragment
         android:id="@+id/aiFragment"
         android:name="com.example.storyverse.ui.ai.AiFragment"
         android:label="fragment_ai"
         tools:layout="@layout/fragment_ai" />
+
     <fragment
         android:id="@+id/communityFragment"
         android:name="com.example.storyverse.ui.community.CommunityFragment"
         android:label="fragment_community"
         tools:layout="@layout/fragment_community" />
+
     <fragment
         android:id="@+id/loginFragment"
         android:name="com.example.storyverse.ui.auth.LoginFragment"
@@ -82,16 +90,19 @@
             android:id="@+id/action_loginFragment_to_homeFragment2"
             app:destination="@id/homeFragment2" />
     </fragment>
+
     <fragment
         android:id="@+id/readerFragment"
         android:name="com.example.storyverse.ui.reader.ReaderFragment"
         android:label="fragment_reader"
         tools:layout="@layout/fragment_reader" />
+
     <fragment
         android:id="@+id/settingsFragment"
         android:name="com.example.storyverse.ui.settings.SettingsFragment"
         android:label="fragment_settings"
         tools:layout="@layout/fragment_settings" />
+
     <fragment
         android:id="@+id/storyDetailFragment"
         android:name="com.example.storyverse.ui.story.StoryDetailFragment"
