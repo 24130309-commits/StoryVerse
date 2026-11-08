@@ -9,13 +9,19 @@ import com.example.storyverse.data.local.entity.ReadingHistoryEntity;
 import com.example.storyverse.data.local.entity.ReadingProgressEntity;
 
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class ReadingRepository {
 
     private final ReadingProgressDao readingProgressDao;
     private final ReadingHistoryDao readingHistoryDao;
 
+    private final ExecutorService executorService =
+            Executors.newSingleThreadExecutor();
+
     public ReadingRepository(Context context) {
+
         StoryVerseDatabase database =
                 StoryVerseDatabase.getInstance(context);
 
@@ -27,69 +33,210 @@ public class ReadingRepository {
     // Reading Progress
     // =========================
 
-    public void saveProgress(ReadingProgressEntity progress) {
-        readingProgressDao.saveProgress(progress);
+    public void saveProgress(
+            ReadingProgressEntity progress,
+            Runnable onComplete
+    ) {
+
+        executorService.execute(() -> {
+
+            readingProgressDao.saveProgress(progress);
+
+            if (onComplete != null) {
+                onComplete.run();
+            }
+        });
     }
 
-    public ReadingProgressEntity getProgress(
+    public void getProgress(
             String userId,
-            String storyId
+            String storyId,
+            RepositoryCallback<ReadingProgressEntity> callback
     ) {
-        return readingProgressDao.getProgress(
-                userId,
-                storyId
-        );
+
+        executorService.execute(() -> {
+
+            try {
+
+                ReadingProgressEntity result =
+                        readingProgressDao.getProgress(
+                                userId,
+                                storyId
+                        );
+
+                callback.onSuccess(result);
+
+            } catch (Exception e) {
+
+                callback.onError(e);
+            }
+        });
     }
 
-    public List<ReadingProgressEntity> getProgressByUserId(
-            String userId
+    public void getProgressByUserId(
+            String userId,
+            RepositoryCallback<List<ReadingProgressEntity>> callback
     ) {
-        return readingProgressDao.getProgressByUserId(userId);
+
+        executorService.execute(() -> {
+
+            try {
+
+                List<ReadingProgressEntity> result =
+                        readingProgressDao.getProgressByUserId(userId);
+
+                callback.onSuccess(result);
+
+            } catch (Exception e) {
+
+                callback.onError(e);
+            }
+        });
     }
 
     public void deleteProgress(
             String userId,
-            String storyId
+            String storyId,
+            Runnable onComplete
     ) {
-        readingProgressDao.deleteProgress(
-                userId,
-                storyId
-        );
+
+        executorService.execute(() -> {
+
+            readingProgressDao.deleteProgress(
+                    userId,
+                    storyId
+            );
+
+            if (onComplete != null) {
+                onComplete.run();
+            }
+        });
     }
 
-    public void deleteAllProgressByUserId(String userId) {
-        readingProgressDao.deleteAllProgressByUserId(userId);
+    public void deleteAllProgressByUserId(
+            String userId,
+            Runnable onComplete
+    ) {
+
+        executorService.execute(() -> {
+
+            readingProgressDao.deleteAllProgressByUserId(
+                    userId
+            );
+
+            if (onComplete != null) {
+                onComplete.run();
+            }
+        });
     }
 
     // =========================
     // Reading History
     // =========================
 
-    public void insertHistory(ReadingHistoryEntity history) {
-        readingHistoryDao.insertHistory(history);
-    }
-
-    public List<ReadingHistoryEntity> getHistoryByUserId(
-            String userId
+    public void insertHistory(
+            ReadingHistoryEntity history,
+            Runnable onComplete
     ) {
-        return readingHistoryDao.getHistoryByUserId(userId);
+
+        executorService.execute(() -> {
+
+            readingHistoryDao.insertHistory(history);
+
+            if (onComplete != null) {
+                onComplete.run();
+            }
+        });
     }
 
-    public List<ReadingHistoryEntity> getHistoryByStoryId(
+    public void getHistoryByUserId(
             String userId,
-            String storyId
+            RepositoryCallback<List<ReadingHistoryEntity>> callback
     ) {
-        return readingHistoryDao.getHistoryByStoryId(
-                userId,
-                storyId
-        );
+
+        executorService.execute(() -> {
+
+            try {
+
+                List<ReadingHistoryEntity> result =
+                        readingHistoryDao.getHistoryByUserId(
+                                userId
+                        );
+
+                callback.onSuccess(result);
+
+            } catch (Exception e) {
+
+                callback.onError(e);
+            }
+        });
     }
 
-    public void deleteHistory(ReadingHistoryEntity history) {
-        readingHistoryDao.deleteHistory(history);
+    public void getHistoryByStoryId(
+            String userId,
+            String storyId,
+            RepositoryCallback<List<ReadingHistoryEntity>> callback
+    ) {
+
+        executorService.execute(() -> {
+
+            try {
+
+                List<ReadingHistoryEntity> result =
+                        readingHistoryDao.getHistoryByStoryId(
+                                userId,
+                                storyId
+                        );
+
+                callback.onSuccess(result);
+
+            } catch (Exception e) {
+
+                callback.onError(e);
+            }
+        });
     }
 
-    public void deleteAllHistoryByUserId(String userId) {
-        readingHistoryDao.deleteAllHistoryByUserId(userId);
+    public void deleteHistory(
+            ReadingHistoryEntity history,
+            Runnable onComplete
+    ) {
+
+        executorService.execute(() -> {
+
+            readingHistoryDao.deleteHistory(history);
+
+            if (onComplete != null) {
+                onComplete.run();
+            }
+        });
+    }
+
+    public void deleteAllHistoryByUserId(
+            String userId,
+            Runnable onComplete
+    ) {
+
+        executorService.execute(() -> {
+
+            readingHistoryDao.deleteAllHistoryByUserId(
+                    userId
+            );
+
+            if (onComplete != null) {
+                onComplete.run();
+            }
+        });
+    }
+
+    // =========================
+    // Callback
+    // =========================
+
+    public interface RepositoryCallback<T> {
+
+        void onSuccess(T result);
+
+        void onError(Exception e);
     }
 }
