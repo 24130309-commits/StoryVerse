@@ -1,7 +1,9 @@
+
 package com.example.storyverse.data.local.entity;
 
 import androidx.annotation.NonNull;
 import androidx.room.Entity;
+import androidx.room.Ignore;
 import androidx.room.PrimaryKey;
 
 @Entity(tableName = "chapters")
@@ -21,9 +23,12 @@ public class ChapterEntity {
     private long createdAt;
     private long updatedAt;
 
+    // Constructor dành cho Room
     public ChapterEntity() {
     }
 
+    // Constructor sử dụng trong Java
+    @Ignore
     public ChapterEntity(
             @NonNull String chapterId,
             String storyId,

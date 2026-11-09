@@ -1,4 +1,3 @@
-
 package com.example.storyverse.viewmodel;
 
 import android.app.Application;
@@ -14,6 +13,7 @@ import com.example.storyverse.data.local.entity.ReadingProgressEntity;
 import com.example.storyverse.data.repository.ChapterRepository;
 import com.example.storyverse.data.repository.ReadingRepository;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class ReaderViewModel extends AndroidViewModel {
@@ -21,38 +21,27 @@ public class ReaderViewModel extends AndroidViewModel {
     private final ChapterRepository chapterRepository;
     private final ReadingRepository readingRepository;
 
-    // Danh sách chương và chương đang được đọc.
     private final MutableLiveData<List<ChapterEntity>> chapters =
             new MutableLiveData<>();
 
     private final MutableLiveData<ChapterEntity> currentChapter =
             new MutableLiveData<>();
 
-    // Tiến độ đọc gần nhất của người dùng.
     private final MutableLiveData<ReadingProgressEntity> readingProgress =
             new MutableLiveData<>();
 
-    // Trạng thái tải dữ liệu và thông báo lỗi.
     private final MutableLiveData<Boolean> loading =
             new MutableLiveData<>(false);
 
     private final MutableLiveData<String> error =
             new MutableLiveData<>();
 
-    public ReaderViewModel(
-            @NonNull Application application
-    ) {
-
+    public ReaderViewModel(@NonNull Application application) {
         super(application);
 
-        chapterRepository =
-                new ChapterRepository(application);
-
-        readingRepository =
-                new ReadingRepository(application);
+        chapterRepository = new ChapterRepository(application);
+        readingRepository = new ReadingRepository(application);
     }
-
-    // Cung cấp dữ liệu cho ReaderFragment theo dõi.
 
     public LiveData<List<ChapterEntity>> getChapters() {
         return chapters;
@@ -74,37 +63,32 @@ public class ReaderViewModel extends AndroidViewModel {
         return error;
     }
 
-    // Tải danh sách chương theo truyện được chọn.
-
+    // Tải danh sách chương từ Room hoặc Firestore.
     public void loadChapters(String storyId) {
 
-        if (storyId == null || storyId.isEmpty()) {
-
+        if (storyId == null || storyId.trim().isEmpty()) {
             error.setValue("Story ID không hợp lệ");
             return;
         }
 
-        loading.postValue(true);
+        loading.setValue(true);
+        error.setValue(null);
 
-        chapterRepository.getChaptersByStoryId(
+        chapterRepository.getChaptersFromCacheOrFirestore(
                 storyId,
                 new ChapterRepository.RepositoryCallback<List<ChapterEntity>>() {
 
                     @Override
-                    public void onSuccess(
-                            List<ChapterEntity> result
-                    ) {
+                    public void onSuccess(List<ChapterEntity> result) {
 
-                        chapters.postValue(result);
+                        List<ChapterEntity> safeResult =
+                                result != null ? result : new ArrayList<>();
 
-                        if (result == null || result.isEmpty()) {
+                        chapters.postValue(safeResult);
 
-                            error.postValue(
-                                    "Chưa có chương nào"
-                            );
-
+                        if (safeResult.isEmpty()) {
+                            error.postValue("Chưa có chương nào");
                         } else {
-
                             error.postValue(null);
                         }
 
@@ -126,14 +110,10 @@ public class ReaderViewModel extends AndroidViewModel {
         );
     }
 
-    // Chọn chương mà người đọc muốn mở.
-
-    public void selectChapter(
-            ChapterEntity chapter
-    ) {
+    // Chọn chương muốn đọc.
+    public void selectChapter(ChapterEntity chapter) {
 
         if (chapter == null) {
-
             error.setValue("Chương không hợp lệ");
             return;
         }
@@ -142,96 +122,103 @@ public class ReaderViewModel extends AndroidViewModel {
         error.setValue(null);
     }
 
-    // Chuyển sang chương kế tiếp trong danh sách.
+    // Tìm vị trí chương bằng chapterId.
+    private int findChapterIndex(
+            List<ChapterEntity> chapterList,
+            String chapterId
+    ) {
 
+        if (chapterList == null || chapterId == null) {
+            return -1;
+        }
+
+        for (int i = 0; i < chapterList.size(); i++) {
+
+            ChapterEntity chapter = chapterList.get(i);
+
+            if (chapter != null
+                    && chapter.getChapterId() != null
+                    && chapterId.equals(chapter.getChapterId())) {
+
+                return i;
+            }
+        }
+
+        return -1;
+    }
+
+    // Chuyển sang chương kế tiếp.
     public void nextChapter() {
 
-        List<ChapterEntity> chapterList =
-                chapters.getValue();
+        List<ChapterEntity> chapterList = chapters.getValue();
+        ChapterEntity current = currentChapter.getValue();
 
-        ChapterEntity current =
-                currentChapter.getValue();
-
-        if (chapterList == null ||
-                chapterList.isEmpty()) {
-
+        if (chapterList == null || chapterList.isEmpty()) {
             return;
         }
 
         if (current == null) {
-
             selectChapter(chapterList.get(0));
             return;
         }
 
-        int currentIndex =
-                chapterList.indexOf(current);
+        int currentIndex = findChapterIndex(
+                chapterList,
+                current.getChapterId()
+        );
 
-        if (currentIndex >= 0 &&
-                currentIndex < chapterList.size() - 1) {
+        if (currentIndex < 0) {
+            error.setValue("Không tìm thấy chương hiện tại");
+            return;
+        }
 
-            ChapterEntity nextChapter =
-                    chapterList.get(currentIndex + 1);
+        if (currentIndex < chapterList.size() - 1) {
 
-            currentChapter.setValue(nextChapter);
-
-            error.setValue(null);
+            selectChapter(chapterList.get(currentIndex + 1));
 
         } else {
 
-            error.setValue(
-                    "Bạn đã đọc đến chương cuối"
-            );
+            error.setValue("Bạn đã đọc đến chương cuối");
         }
     }
 
-    // Quay lại chương trước nếu vẫn còn chương để chuyển.
-
+    // Quay lại chương trước.
     public void previousChapter() {
 
-        List<ChapterEntity> chapterList =
-                chapters.getValue();
+        List<ChapterEntity> chapterList = chapters.getValue();
+        ChapterEntity current = currentChapter.getValue();
 
-        ChapterEntity current =
-                currentChapter.getValue();
-
-        if (chapterList == null ||
-                chapterList.isEmpty()) {
-
+        if (chapterList == null || chapterList.isEmpty()) {
             return;
         }
 
         if (current == null) {
-
             selectChapter(chapterList.get(0));
             return;
         }
 
-        int currentIndex =
-                chapterList.indexOf(current);
+        int currentIndex = findChapterIndex(
+                chapterList,
+                current.getChapterId()
+        );
+
+        if (currentIndex < 0) {
+            error.setValue("Không tìm thấy chương hiện tại");
+            return;
+        }
 
         if (currentIndex > 0) {
 
-            ChapterEntity previousChapter =
-                    chapterList.get(currentIndex - 1);
-
-            currentChapter.setValue(previousChapter);
-
-            error.setValue(null);
+            selectChapter(chapterList.get(currentIndex - 1));
 
         } else {
 
-            error.setValue(
-                    "Đây là chương đầu tiên"
-            );
+            error.setValue("Đây là chương đầu tiên");
         }
     }
 
-    // Lưu tiến độ đọc hiện tại.
-
-    public void saveProgress(
-            ReadingProgressEntity progress
-    ) {
+    // Lưu tiến độ đọc.
+    public void saveProgress(ReadingProgressEntity progress) {
 
         if (progress == null) {
             return;
@@ -243,18 +230,13 @@ public class ReaderViewModel extends AndroidViewModel {
         );
     }
 
-    // Tìm tiến độ đọc đã lưu để khôi phục lần đọc trước.
+    // Tải tiến độ đọc đã lưu.
+    public void loadProgress(String userId, String storyId) {
 
-    public void loadProgress(
-            String userId,
-            String storyId
-    ) {
+        if (userId == null || userId.trim().isEmpty()
+                || storyId == null || storyId.trim().isEmpty()) {
 
-        if (userId == null ||
-                userId.isEmpty() ||
-                storyId == null ||
-                storyId.isEmpty()) {
-
+            error.setValue("Thông tin người dùng hoặc truyện không hợp lệ");
             return;
         }
 
@@ -264,11 +246,10 @@ public class ReaderViewModel extends AndroidViewModel {
                 new ReadingRepository.RepositoryCallback<ReadingProgressEntity>() {
 
                     @Override
-                    public void onSuccess(
-                            ReadingProgressEntity result
-                    ) {
+                    public void onSuccess(ReadingProgressEntity result) {
 
                         readingProgress.postValue(result);
+                        error.postValue(null);
                     }
 
                     @Override
@@ -284,31 +265,24 @@ public class ReaderViewModel extends AndroidViewModel {
         );
     }
 
-    // Ghi lại chương mà người dùng đã đọc.
-
-    public void saveHistory(
-            ReadingHistoryEntity history
-    ) {
+    // Lưu lịch sử đọc.
+    public void saveHistory(ReadingHistoryEntity history) {
 
         if (history == null) {
             return;
         }
 
-        readingRepository.insertHistory(
-                history,
-                null
-        );
+        readingRepository.insertHistory(history, null);
     }
 
-    // Tạo một số chương mẫu để kiểm tra chức năng đọc truyện.
-
+    // Tạo chương mẫu để tiếp tục kiểm thử giao diện.
     public void insertSampleChapters(String storyId) {
 
-        if (storyId == null || storyId.isEmpty()) {
+        if (storyId == null || storyId.trim().isEmpty()) {
             return;
         }
 
-        List<ChapterEntity> sampleChapters = new java.util.ArrayList<>();
+        List<ChapterEntity> sampleChapters = new ArrayList<>();
 
         long currentTime = System.currentTimeMillis();
 
@@ -318,12 +292,12 @@ public class ReaderViewModel extends AndroidViewModel {
                         storyId,
                         1,
                         "Ngày đầu tiên",
-                        "Buổi sáng hôm ấy, thành phố vẫn còn chìm trong những tia nắng dịu dàng. " +
-                                "Minh Thuận bước chậm trên con đường quen thuộc đến trường. " +
-                                "Mọi thứ dường như vẫn bình thường, cho đến khi cậu vô tình gặp một cô gái đang đứng bên cạnh cổng trường.\n\n" +
-                                "Cô gái ấy đang loay hoay tìm kiếm thứ gì đó trong chiếc túi nhỏ. " +
-                                "Thuận nhìn thấy một quyển sách rơi dưới chân cô và nhẹ nhàng nhặt lên.\n\n" +
-                                "Đó chỉ là một khoảnh khắc rất nhỏ, nhưng đôi khi những câu chuyện đẹp lại bắt đầu từ những điều giản dị như thế.",
+                        "Buổi sáng hôm ấy, thành phố vẫn còn chìm trong những tia nắng dịu dàng. "
+                                + "Minh Thuận bước chậm trên con đường quen thuộc đến trường. "
+                                + "Mọi thứ dường như vẫn bình thường, cho đến khi cậu vô tình gặp một cô gái đang đứng bên cạnh cổng trường.\n\n"
+                                + "Cô gái ấy đang loay hoay tìm kiếm thứ gì đó trong chiếc túi nhỏ. "
+                                + "Thuận nhìn thấy một quyển sách rơi dưới chân cô và nhẹ nhàng nhặt lên.\n\n"
+                                + "Đó chỉ là một khoảnh khắc rất nhỏ, nhưng đôi khi những câu chuyện đẹp lại bắt đầu từ những điều giản dị như thế.",
                         120,
                         currentTime,
                         currentTime,
@@ -337,12 +311,12 @@ public class ReaderViewModel extends AndroidViewModel {
                         storyId,
                         2,
                         "Một lần gặp lại",
-                        "Ngày hôm sau, Thuận không nghĩ rằng mình sẽ gặp lại cô gái ấy nhanh đến vậy.\n\n" +
-                                "Trong giờ nghỉ, cậu bước ra hành lang và nhìn thấy cô đang đứng một mình bên cửa sổ. " +
-                                "Ánh nắng buổi trưa nhẹ nhàng rơi xuống mái tóc của cô.\n\n" +
-                                "Hai người bắt đầu trò chuyện. Ban đầu chỉ là vài câu hỏi đơn giản về bài học và lớp học. " +
-                                "Nhưng cuộc trò chuyện kéo dài lâu hơn cả hai người tưởng.\n\n" +
-                                "Từ hôm đó, những lần gặp nhau tình cờ bắt đầu xuất hiện nhiều hơn.",
+                        "Ngày hôm sau, Thuận không nghĩ rằng mình sẽ gặp lại cô gái ấy nhanh đến vậy.\n\n"
+                                + "Trong giờ nghỉ, cậu bước ra hành lang và nhìn thấy cô đang đứng một mình bên cửa sổ. "
+                                + "Ánh nắng buổi trưa nhẹ nhàng rơi xuống mái tóc của cô.\n\n"
+                                + "Hai người bắt đầu trò chuyện. Ban đầu chỉ là vài câu hỏi đơn giản về bài học và lớp học. "
+                                + "Nhưng cuộc trò chuyện kéo dài lâu hơn cả hai người tưởng.\n\n"
+                                + "Từ hôm đó, những lần gặp nhau tình cờ bắt đầu xuất hiện nhiều hơn.",
                         135,
                         currentTime,
                         currentTime,
@@ -356,12 +330,12 @@ public class ReaderViewModel extends AndroidViewModel {
                         storyId,
                         3,
                         "Khoảng cách gần hơn",
-                        "Những ngày tiếp theo trôi qua nhẹ nhàng.\n\n" +
-                                "Thuận và cô cùng nhau làm một bài tập nhóm. " +
-                                "Những cuộc trò chuyện ngắn dần trở nên tự nhiên hơn.\n\n" +
-                                "Có những lúc cả hai chỉ ngồi cạnh nhau mà không cần nói quá nhiều. " +
-                                "Nhưng chính những khoảng lặng ấy lại khiến Thuận nhận ra rằng cô gái trước mặt đã trở nên đặc biệt với mình.\n\n" +
-                                "Cậu bắt đầu mong chờ những ngày đến lớp, chỉ để có thể nhìn thấy cô thêm một lần.",
+                        "Những ngày tiếp theo trôi qua nhẹ nhàng.\n\n"
+                                + "Thuận và cô cùng nhau làm một bài tập nhóm. "
+                                + "Những cuộc trò chuyện ngắn dần trở nên tự nhiên hơn.\n\n"
+                                + "Có những lúc cả hai chỉ ngồi cạnh nhau mà không cần nói quá nhiều. "
+                                + "Nhưng chính những khoảng lặng ấy lại khiến Thuận nhận ra rằng cô gái trước mặt đã trở nên đặc biệt với mình.\n\n"
+                                + "Cậu bắt đầu mong chờ những ngày đến lớp, chỉ để có thể nhìn thấy cô thêm một lần.",
                         150,
                         currentTime,
                         currentTime,
@@ -371,7 +345,12 @@ public class ReaderViewModel extends AndroidViewModel {
 
         chapterRepository.insertChapters(
                 sampleChapters,
-                () -> loadChapters(storyId)
+                () -> loadChapters(storyId),
+                e -> error.postValue(
+                        e.getMessage() != null
+                                ? e.getMessage()
+                                : "Không thể lưu danh sách chương mẫu"
+                )
         );
     }
 }

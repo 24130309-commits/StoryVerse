@@ -1,3 +1,4 @@
+
 package com.example.storyverse.data.local.dao;
 
 import androidx.room.Dao;
@@ -30,6 +31,10 @@ public interface StoryDao {
 
     @Query("SELECT * FROM stories WHERE status = :status ORDER BY updatedAt DESC")
     List<StoryEntity> getStoriesByStatus(String status);
+
+    // Kiểm tra số lượng truyện đã lưu trong Room
+    @Query("SELECT COUNT(*) FROM stories")
+    int getCachedStoryCount();
 
     @Delete
     void deleteStory(StoryEntity story);

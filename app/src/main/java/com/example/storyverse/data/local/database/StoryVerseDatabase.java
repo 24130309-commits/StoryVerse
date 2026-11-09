@@ -1,10 +1,14 @@
+
 package com.example.storyverse.data.local.database;
 
 import android.content.Context;
 
+import androidx.annotation.NonNull;
 import androidx.room.Database;
 import androidx.room.Room;
 import androidx.room.RoomDatabase;
+import androidx.room.migration.Migration;
+import androidx.sqlite.db.SupportSQLiteDatabase;
 
 import com.example.storyverse.data.local.dao.AuthorDao;
 import com.example.storyverse.data.local.dao.CategoryDao;
@@ -44,10 +48,42 @@ import com.example.storyverse.data.local.entity.UserEntity;
                 CommentEntity.class,
                 NotificationEntity.class
         },
-        version = 1,
+        version = 2,
         exportSchema = false
 )
 public abstract class StoryVerseDatabase extends RoomDatabase {
+
+    // Migration từ version 1 lên version 2
+    private static final Migration MIGRATION_1_2 =
+            new Migration(1, 2) {
+                @Override
+                public void migrate(
+                        @NonNull SupportSQLiteDatabase database
+                ) {
+
+                    // Bổ sung số lượng chương
+                    database.execSQL(
+                            "ALTER TABLE stories ADD COLUMN chapterCount INTEGER NOT NULL DEFAULT 0"
+                    );
+
+                    database.execSQL(
+                            "ALTER TABLE stories ADD COLUMN previewChapterCount INTEGER NOT NULL DEFAULT 0"
+                    );
+
+                    // Bổ sung thông tin nguồn dữ liệu
+                    database.execSQL(
+                            "ALTER TABLE stories ADD COLUMN source TEXT"
+                    );
+
+                    database.execSQL(
+                            "ALTER TABLE stories ADD COLUMN sourceUrl TEXT"
+                    );
+
+                    database.execSQL(
+                            "ALTER TABLE stories ADD COLUMN license TEXT"
+                    );
+                }
+            };
 
     private static volatile StoryVerseDatabase INSTANCE;
 
@@ -74,14 +110,18 @@ public abstract class StoryVerseDatabase extends RoomDatabase {
     public abstract NotificationDao notificationDao();
 
     public static StoryVerseDatabase getInstance(Context context) {
+
         if (INSTANCE == null) {
             synchronized (StoryVerseDatabase.class) {
+
                 if (INSTANCE == null) {
                     INSTANCE = Room.databaseBuilder(
-                            context.getApplicationContext(),
-                            StoryVerseDatabase.class,
-                            "storyverse_database"
-                    ).build();
+                                    context.getApplicationContext(),
+                                    StoryVerseDatabase.class,
+                                    "storyverse_database"
+                            )
+                            .addMigrations(MIGRATION_1_2)
+                            .build();
                 }
             }
         }

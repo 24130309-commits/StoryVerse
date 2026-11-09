@@ -1,7 +1,9 @@
+
 package com.example.storyverse.data.local.entity;
 
 import androidx.annotation.NonNull;
 import androidx.room.Entity;
+import androidx.room.Ignore;
 import androidx.room.PrimaryKey;
 
 @Entity(tableName = "stories")
@@ -25,12 +27,24 @@ public class StoryEntity {
     private double ratingAverage;
     private long ratingCount;
 
+    // Thông tin số lượng chương
+    private long chapterCount;
+    private long previewChapterCount;
+
+    // Thông tin nguồn dữ liệu và giấy phép
+    private String source;
+    private String sourceUrl;
+    private String license;
+
     private long createdAt;
     private long updatedAt;
 
+    // Constructor dành cho Room
     public StoryEntity() {
     }
 
+    // Constructor sử dụng trong Java
+    @Ignore
     public StoryEntity(
             @NonNull String storyId,
             String title,
@@ -44,6 +58,11 @@ public class StoryEntity {
             long favoriteCount,
             double ratingAverage,
             long ratingCount,
+            long chapterCount,
+            long previewChapterCount,
+            String source,
+            String sourceUrl,
+            String license,
             long createdAt,
             long updatedAt
     ) {
@@ -59,6 +78,11 @@ public class StoryEntity {
         this.favoriteCount = favoriteCount;
         this.ratingAverage = ratingAverage;
         this.ratingCount = ratingCount;
+        this.chapterCount = chapterCount;
+        this.previewChapterCount = previewChapterCount;
+        this.source = source;
+        this.sourceUrl = sourceUrl;
+        this.license = license;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
     }
@@ -158,6 +182,46 @@ public class StoryEntity {
 
     public void setRatingCount(long ratingCount) {
         this.ratingCount = ratingCount;
+    }
+
+    public long getChapterCount() {
+        return chapterCount;
+    }
+
+    public void setChapterCount(long chapterCount) {
+        this.chapterCount = chapterCount;
+    }
+
+    public long getPreviewChapterCount() {
+        return previewChapterCount;
+    }
+
+    public void setPreviewChapterCount(long previewChapterCount) {
+        this.previewChapterCount = previewChapterCount;
+    }
+
+    public String getSource() {
+        return source;
+    }
+
+    public void setSource(String source) {
+        this.source = source;
+    }
+
+    public String getSourceUrl() {
+        return sourceUrl;
+    }
+
+    public void setSourceUrl(String sourceUrl) {
+        this.sourceUrl = sourceUrl;
+    }
+
+    public String getLicense() {
+        return license;
+    }
+
+    public void setLicense(String license) {
+        this.license = license;
     }
 
     public long getCreatedAt() {
