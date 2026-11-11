@@ -5,46 +5,47 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="vertical"
-    android:paddingHorizontal="4dp"
-    android:paddingVertical="3dp">
+    android:paddingTop="3dp"
+    android:paddingBottom="3dp">
 
     <LinearLayout
         android:id="@+id/layout_chapter_content"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:minHeight="64dp"
+        android:minHeight="70dp"
         android:gravity="center_vertical"
         android:orientation="horizontal"
-        android:padding="10dp"
+        android:paddingStart="12dp"
+        android:paddingTop="10dp"
+        android:paddingEnd="12dp"
+        android:paddingBottom="10dp"
         android:background="?attr/selectableItemBackground">
 
-        <!-- Số thứ tự chương -->
         <TextView
             android:id="@+id/tv_chapter_number"
-            android:layout_width="42dp"
-            android:layout_height="42dp"
+            android:layout_width="44dp"
+            android:layout_height="44dp"
             android:background="@drawable/bg_chapter_number"
             android:gravity="center"
             android:text="01"
-            android:textColor="#555555"
-            android:textSize="14sp"
+            android:textColor="#6654D9"
+            android:textSize="13sp"
             android:textStyle="bold" />
 
-        <!-- Tên chương và trạng thái -->
         <LinearLayout
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:orientation="vertical"
-            android:layout_marginStart="14dp">
+            android:layout_marginStart="14dp"
+            android:orientation="vertical">
 
             <TextView
                 android:id="@+id/tv_chapter_title"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:text="Tên chương"
-                android:textColor="#222222"
-                android:textSize="15sp"
+                android:textColor="#29253C"
+                android:textSize="14sp"
                 android:textStyle="bold"
                 android:maxLines="2"
                 android:ellipsize="end" />
@@ -53,33 +54,33 @@
                 android:id="@+id/tv_chapter_status"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="4dp"
-                android:text="CHƯƠNG ĐANG ĐỌC"
-                android:textColor="#7059D9"
-                android:textSize="10sp"
+                android:layout_marginTop="5dp"
+                android:background="@drawable/bg_reader_chapter_label"
+                android:paddingStart="7dp"
+                android:paddingTop="3dp"
+                android:paddingEnd="7dp"
+                android:paddingBottom="3dp"
+                android:text="ĐANG ĐỌC"
+                android:textColor="#6654D9"
+                android:textSize="9sp"
                 android:textStyle="bold"
                 android:visibility="gone" />
-
         </LinearLayout>
 
-        <!-- Dấu tích chương hiện tại -->
         <ImageView
             android:id="@+id/iv_chapter_selected"
             android:layout_width="22dp"
             android:layout_height="22dp"
-            android:src="@android:drawable/checkbox_on_background"
+            android:layout_marginStart="8dp"
+            android:src="@drawable/ic_reader_check"
             android:contentDescription="Chương đang đọc"
-            android:visibility="gone"
-            android:layout_marginStart="8dp" />
-
+            android:visibility="gone" />
     </LinearLayout>
 
-    <!-- Đường phân cách -->
     <View
         android:layout_width="match_parent"
         android:layout_height="1dp"
-        android:layout_marginStart="56dp"
-        android:layout_marginEnd="8dp"
-        android:background="#EEEEEE" />
-
+        android:layout_marginStart="70dp"
+        android:layout_marginEnd="10dp"
+        android:background="#F0EDF5" />
 </LinearLayout>

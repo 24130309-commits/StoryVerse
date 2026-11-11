@@ -1,7 +1,7 @@
-
 package com.example.storyverse.data.model;
 
 import java.text.Normalizer;
+import java.util.ArrayList;
 import java.util.List;
 
 public class Story {
@@ -15,10 +15,12 @@ public class Story {
     private List<String> categories;
     private String source;
     private String sourceUrl;
+    private String license;
 
     public Story() {
     }
 
+    // Constructor tương thích phiên bản cũ
     public Story(
             String storyId,
             String title,
@@ -30,6 +32,33 @@ public class Story {
             String source,
             String sourceUrl
     ) {
+        this(
+                storyId,
+                title,
+                author,
+                description,
+                coverUrl,
+                language,
+                categories,
+                source,
+                sourceUrl,
+                null
+        );
+    }
+
+    // Constructor đầy đủ có thông tin giấy phép
+    public Story(
+            String storyId,
+            String title,
+            String author,
+            String description,
+            String coverUrl,
+            String language,
+            List<String> categories,
+            String source,
+            String sourceUrl,
+            String license
+    ) {
         this.storyId = storyId;
         setTitle(title);
         setAuthor(author);
@@ -39,6 +68,7 @@ public class Story {
         setCategories(categories);
         this.source = source;
         this.sourceUrl = sourceUrl;
+        this.license = license;
     }
 
     private String normalizeVietnamese(String value) {
@@ -110,10 +140,12 @@ public class Story {
             return;
         }
 
-        this.categories = new java.util.ArrayList<>();
+        this.categories = new ArrayList<>();
 
         for (String category : categories) {
-            this.categories.add(normalizeVietnamese(category));
+            this.categories.add(
+                    normalizeVietnamese(category)
+            );
         }
     }
 
@@ -131,5 +163,13 @@ public class Story {
 
     public void setSourceUrl(String sourceUrl) {
         this.sourceUrl = sourceUrl;
+    }
+
+    public String getLicense() {
+        return license;
+    }
+
+    public void setLicense(String license) {
+        this.license = license;
     }
 }

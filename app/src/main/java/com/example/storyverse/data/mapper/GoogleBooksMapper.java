@@ -1,111 +1,216 @@
 
 package com.example.storyverse.data.mapper;
 
+import android.text.TextUtils;
+
 import com.example.storyverse.data.model.Story;
 import com.example.storyverse.data.remote.api.googlebooks.GoogleBooksResponse;
 
 import java.text.Normalizer;
 import java.util.ArrayList;
-import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
+import java.util.Set;
 
 public class GoogleBooksMapper {
 
     private GoogleBooksMapper() {
     }
 
-    // Chuẩn hóa Unicode NFC, giữ nguyên dấu tiếng Việt
+    // =====================================================
+    // 1. CHUẨN HÓA VĂN BẢN
+    // =====================================================
+
     private static String normalizeText(String value) {
 
-        if (value == null) {
+        if (value == null || value.trim().isEmpty()) {
             return null;
         }
 
-        return Normalizer.normalize(
+        String result = Normalizer.normalize(
                 value.trim(),
                 Normalizer.Form.NFC
         );
+
+        result = result.replaceAll("\\s+", " ");
+
+        return result.isEmpty() ? null : result;
     }
+
+    // =====================================================
+    // 2. TẠO KHÓA SO SÁNH
+    // =====================================================
+
+    private static String normalizeKey(String value) {
+
+        if (value == null || value.trim().isEmpty()) {
+            return "";
+        }
+
+        String result = value.trim().toLowerCase(Locale.ROOT);
+
+        result = result.replace('đ', 'd');
+
+        result = Normalizer.normalize(
+                result,
+                Normalizer.Form.NFD
+        );
+
+        result = result.replaceAll("\\p{M}+", "");
+        result = result.replaceAll("\\s+", " ");
+
+        return result;
+    }
+
+    // =====================================================
+    // 3. CHUẨN HÓA URL ẢNH
+    // =====================================================
+
+    private static String normalizeImageUrl(String url) {
+
+        if (url == null || url.trim().isEmpty()) {
+            return null;
+        }
+
+        String result = url.trim();
+
+        result = result.replaceFirst("^http://", "https://");
+
+        return result;
+    }
+
+    // =====================================================
+    // 4. CHUYỂN GOOGLE BOOKS THÀNH STORY
+    // =====================================================
 
     public static Story toStory(
             GoogleBooksResponse.BookItem item
     ) {
 
-        if (item == null || item.volumeInfo == null) {
+        if (item == null
+                || item.volumeInfo == null
+                || item.id == null
+                || item.id.trim().isEmpty()) {
+
             return null;
         }
 
         GoogleBooksResponse.VolumeInfo info = item.volumeInfo;
 
-        // Chuẩn hóa tiêu đề
         String title = normalizeText(info.title);
 
-        // Lấy và chuẩn hóa tác giả
-        String author = "Chưa rõ tác giả";
+        if (title == null) {
+            return null;
+        }
 
-        if (info.authors != null && !info.authors.isEmpty()) {
+        // -------------------------------------------------
+        // TÁC GIẢ
+        // -------------------------------------------------
+
+        String author = null;
+
+        if (info.authors != null) {
+
             List<String> authors = new ArrayList<>();
+            Set<String> authorKeys = new HashSet<>();
 
             for (String name : info.authors) {
+
                 String normalizedName = normalizeText(name);
 
-                if (normalizedName != null && !normalizedName.isEmpty()) {
+                if (normalizedName == null) {
+                    continue;
+                }
+
+                String key = normalizeKey(normalizedName);
+
+                if (!key.isEmpty() && authorKeys.add(key)) {
                     authors.add(normalizedName);
                 }
             }
 
             if (!authors.isEmpty()) {
-                author = android.text.TextUtils.join(", ", authors);
+                author = TextUtils.join(", ", authors);
             }
         }
 
-        // Chuẩn hóa mô tả
+        // -------------------------------------------------
+        // MÔ TẢ
+        // -------------------------------------------------
+
         String description = normalizeText(info.description);
 
-        // Lấy ảnh bìa
+        // -------------------------------------------------
+        // ẢNH BÌA
+        // -------------------------------------------------
+
         String coverUrl = null;
 
         if (info.imageLinks != null) {
 
-            if (info.imageLinks.thumbnail != null) {
-                coverUrl = info.imageLinks.thumbnail
-                        .replace("http://", "https://");
+            coverUrl = normalizeImageUrl(
+                    info.imageLinks.thumbnail
+            );
 
-            } else if (info.imageLinks.small != null) {
-                coverUrl = info.imageLinks.small
-                        .replace("http://", "https://");
+            if (coverUrl == null) {
+                coverUrl = normalizeImageUrl(
+                        info.imageLinks.small
+                );
             }
         }
 
-        // Chuẩn hóa thể loại
+        // -------------------------------------------------
+        // THỂ LOẠI
+        // -------------------------------------------------
+
         List<String> categories = new ArrayList<>();
+        Set<String> categoryKeys = new HashSet<>();
 
         if (info.categories != null) {
 
             for (String category : info.categories) {
+
                 String normalizedCategory = normalizeText(category);
 
-                if (normalizedCategory != null
-                        && !normalizedCategory.isEmpty()) {
+                if (normalizedCategory == null) {
+                    continue;
+                }
+
+                String key = normalizeKey(normalizedCategory);
+
+                if (!key.isEmpty() && categoryKeys.add(key)) {
                     categories.add(normalizedCategory);
                 }
             }
         }
 
-        // Chuẩn hóa mã ngôn ngữ
+        // -------------------------------------------------
+        // NGÔN NGỮ
+        // -------------------------------------------------
+
         String language = normalizeText(info.language);
 
         if (language != null) {
-            language = language.toLowerCase(java.util.Locale.ROOT);
+            language = language.toLowerCase(Locale.ROOT);
         }
 
-        // Đường dẫn nguồn sách
-        String sourceUrl = item.id != null
-                ? "https://books.google.com/books?id=" + item.id
-                : null;
+        // -------------------------------------------------
+        // NGUỒN DỮ LIỆU
+        // -------------------------------------------------
+
+        String sourceUrl =
+                "https://books.google.com/books?id=" + item.id;
+
+        // Giữ nguyên quy tắc ID hiện tại.
+        String storyId = "google_" + item.id.trim();
+
+        // -------------------------------------------------
+        // TẠO STORY
+        // -------------------------------------------------
 
         return new Story(
-                "google_" + item.id,
+                storyId,
                 title,
                 author,
                 description,
@@ -116,6 +221,10 @@ public class GoogleBooksMapper {
                 sourceUrl
         );
     }
+
+    // =====================================================
+    // 5. CHUYỂN DANH SÁCH BOOK ITEM THÀNH STORY
+    // =====================================================
 
     public static List<Story> toStoryList(
             List<GoogleBooksResponse.BookItem> items

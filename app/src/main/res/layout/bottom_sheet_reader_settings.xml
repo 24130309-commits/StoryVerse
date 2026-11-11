@@ -1,28 +1,46 @@
-
+<?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="vertical"
-    android:padding="24dp"
-    android:background="#FFFFFF">
+    android:paddingStart="22dp"
+    android:paddingTop="16dp"
+    android:paddingEnd="22dp"
+    android:paddingBottom="24dp"
+    android:background="@drawable/bg_reader_sheet">
 
-    <!-- Tiêu đề -->
+    <View
+        android:layout_width="42dp"
+        android:layout_height="4dp"
+        android:layout_gravity="center_horizontal"
+        android:layout_marginBottom="18dp"
+        android:background="@drawable/bg_reader_sheet_handle" />
+
     <TextView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:text="TÙY CHỈNH TRẢI NGHIỆM"
+        android:textColor="#8A849F"
+        android:textSize="10sp"
+        android:textStyle="bold"
+        android:letterSpacing="0.12" />
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="4dp"
         android:text="Cài đặt đọc"
-        android:textColor="#181824"
-        android:textSize="20sp"
+        android:textColor="#25213A"
+        android:textSize="21sp"
         android:textStyle="bold" />
 
-    <!-- Cỡ chữ -->
     <TextView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="24dp"
+        android:layout_marginTop="22dp"
         android:text="Cỡ chữ"
-        android:textColor="#181824"
-        android:textSize="16sp"
+        android:textColor="#38334D"
+        android:textSize="14sp"
         android:textStyle="bold" />
 
     <RadioGroup
@@ -37,7 +55,8 @@
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:text="Nhỏ"
-            android:textColor="#181824" />
+            android:textColor="#514B67"
+            android:buttonTint="#7564E8" />
 
         <RadioButton
             android:id="@+id/rb_font_medium"
@@ -45,7 +64,8 @@
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:text="Vừa"
-            android:textColor="#181824" />
+            android:textColor="#514B67"
+            android:buttonTint="#7564E8" />
 
         <RadioButton
             android:id="@+id/rb_font_large"
@@ -53,18 +73,60 @@
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:text="Lớn"
-            android:textColor="#181824" />
-
+            android:textColor="#514B67"
+            android:buttonTint="#7564E8" />
     </RadioGroup>
 
-    <!-- Nền đọc -->
     <TextView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="16dp"
-        android:text="Nền đọc"
-        android:textColor="#181824"
-        android:textSize="16sp"
+        android:text="Khoảng cách dòng"
+        android:textColor="#38334D"
+        android:textSize="14sp"
+        android:textStyle="bold" />
+
+    <RadioGroup
+        android:id="@+id/rg_line_spacing"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal">
+
+        <RadioButton
+            android:id="@+id/rb_spacing_compact"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Gọn"
+            android:textColor="#514B67"
+            android:buttonTint="#7564E8" />
+
+        <RadioButton
+            android:id="@+id/rb_spacing_normal"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Vừa"
+            android:textColor="#514B67"
+            android:buttonTint="#7564E8" />
+
+        <RadioButton
+            android:id="@+id/rb_spacing_relaxed"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Thoáng"
+            android:textColor="#514B67"
+            android:buttonTint="#7564E8" />
+    </RadioGroup>
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:text="Màu nền đọc"
+        android:textColor="#38334D"
+        android:textSize="14sp"
         android:textStyle="bold" />
 
     <RadioGroup
@@ -79,7 +141,8 @@
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:text="Sáng"
-            android:textColor="#181824" />
+            android:textColor="#514B67"
+            android:buttonTint="#7564E8" />
 
         <RadioButton
             android:id="@+id/rb_bg_cream"
@@ -87,7 +150,8 @@
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:text="Kem"
-            android:textColor="#181824" />
+            android:textColor="#514B67"
+            android:buttonTint="#7564E8" />
 
         <RadioButton
             android:id="@+id/rb_bg_dark"
@@ -95,8 +159,8 @@
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:text="Tối"
-            android:textColor="#181824" />
-
+            android:textColor="#514B67"
+            android:buttonTint="#7564E8" />
     </RadioGroup>
 
 </LinearLayout>

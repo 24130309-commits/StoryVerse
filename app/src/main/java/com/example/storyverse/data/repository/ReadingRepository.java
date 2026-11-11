@@ -41,34 +41,50 @@ public class ReadingRepository {
     }
 
     // =========================
-    // Reading Progress
+    // READING PROGRESS
     // =========================
 
-    // Lưu tiến độ đọc.
+    // Giữ hàm cũ để tương thích với code đang sử dụng.
     public void saveProgress(
             ReadingProgressEntity progress,
             Runnable onComplete
+    ) {
+        saveProgress(progress, onComplete, null);
+    }
+
+    // Lưu tiến độ và nhận thông báo nếu xảy ra lỗi.
+    public void saveProgress(
+            ReadingProgressEntity progress,
+            Runnable onComplete,
+            ErrorCallback onError
     ) {
 
         executorService.execute(() -> {
 
             try {
-
                 if (progress == null) {
                     throw new IllegalArgumentException(
                             "Reading progress không được null"
                     );
                 }
 
+                if (!isValidId(progress.getUserId())
+                        || !isValidId(progress.getStoryId())
+                        || !isValidId(progress.getChapterId())) {
+
+                    throw new IllegalArgumentException(
+                            "Thông tin tiến độ đọc không hợp lệ"
+                    );
+                }
+
                 readingProgressDao.saveProgress(progress);
 
-                if (onComplete != null) {
-                    mainHandler.post(onComplete);
-                }
+                postComplete(onComplete);
 
             } catch (Exception e) {
 
                 Log.e(TAG, "Lỗi khi lưu tiến độ đọc", e);
+                postError(onError, e);
             }
         });
     }
@@ -80,28 +96,26 @@ public class ReadingRepository {
             RepositoryCallback<ReadingProgressEntity> callback
     ) {
 
+        if (!isValidId(userId) || !isValidId(storyId)) {
+            postError(
+                    callback,
+                    new IllegalArgumentException(
+                            "User ID hoặc Story ID không hợp lệ"
+                    )
+            );
+            return;
+        }
+
         executorService.execute(() -> {
 
             try {
-
-                if (userId == null || userId.isEmpty()
-                        || storyId == null || storyId.isEmpty()) {
-
-                    throw new IllegalArgumentException(
-                            "User ID hoặc Story ID không hợp lệ"
-                    );
-                }
-
                 ReadingProgressEntity result =
-                        readingProgressDao.getProgress(
-                                userId,
-                                storyId
-                        );
+                        readingProgressDao.getProgress(userId, storyId);
 
                 postSuccess(callback, result);
 
             } catch (Exception e) {
-
+                Log.e(TAG, "Lỗi khi tải tiến độ đọc", e);
                 postError(callback, e);
             }
         });
@@ -113,29 +127,29 @@ public class ReadingRepository {
             RepositoryCallback<List<ReadingProgressEntity>> callback
     ) {
 
+        if (!isValidId(userId)) {
+            postError(
+                    callback,
+                    new IllegalArgumentException("User ID không hợp lệ")
+            );
+            return;
+        }
+
         executorService.execute(() -> {
 
             try {
-
-                if (userId == null || userId.isEmpty()) {
-                    throw new IllegalArgumentException(
-                            "User ID không hợp lệ"
-                    );
-                }
-
                 List<ReadingProgressEntity> result =
                         readingProgressDao.getProgressByUserId(userId);
 
                 postSuccess(callback, result);
 
             } catch (Exception e) {
-
+                Log.e(TAG, "Lỗi khi tải danh sách tiến độ", e);
                 postError(callback, e);
             }
         });
     }
 
-    // Xóa tiến độ đọc của một truyện.
     public void deleteProgress(
             String userId,
             String storyId,
@@ -145,22 +159,15 @@ public class ReadingRepository {
         executorService.execute(() -> {
 
             try {
-
-                readingProgressDao.deleteProgress(
-                        userId,
-                        storyId
-                );
-
+                readingProgressDao.deleteProgress(userId, storyId);
                 postComplete(onComplete);
 
             } catch (Exception e) {
-
                 Log.e(TAG, "Lỗi khi xóa tiến độ đọc", e);
             }
         });
     }
 
-    // Xóa toàn bộ tiến độ đọc của một người dùng.
     public void deleteAllProgressByUserId(
             String userId,
             Runnable onComplete
@@ -169,45 +176,59 @@ public class ReadingRepository {
         executorService.execute(() -> {
 
             try {
-
                 readingProgressDao.deleteAllProgressByUserId(userId);
-
                 postComplete(onComplete);
 
             } catch (Exception e) {
-
                 Log.e(TAG, "Lỗi khi xóa toàn bộ tiến độ đọc", e);
             }
         });
     }
 
     // =========================
-    // Reading History
+    // READING HISTORY
     // =========================
 
-    // Thêm lịch sử đọc.
+    // Giữ hàm cũ để tương thích.
     public void insertHistory(
             ReadingHistoryEntity history,
             Runnable onComplete
+    ) {
+        insertHistory(history, onComplete, null);
+    }
+
+    // Thêm lịch sử đọc và nhận thông báo lỗi.
+    public void insertHistory(
+            ReadingHistoryEntity history,
+            Runnable onComplete,
+            ErrorCallback onError
     ) {
 
         executorService.execute(() -> {
 
             try {
-
                 if (history == null) {
                     throw new IllegalArgumentException(
                             "Reading history không được null"
                     );
                 }
 
-                readingHistoryDao.insertHistory(history);
+                if (!isValidId(history.getUserId())
+                        || !isValidId(history.getStoryId())
+                        || !isValidId(history.getChapterId())) {
 
+                    throw new IllegalArgumentException(
+                            "Thông tin lịch sử đọc không hợp lệ"
+                    );
+                }
+
+                readingHistoryDao.insertHistory(history);
                 postComplete(onComplete);
 
             } catch (Exception e) {
 
                 Log.e(TAG, "Lỗi khi lưu lịch sử đọc", e);
+                postError(onError, e);
             }
         });
     }
@@ -218,23 +239,24 @@ public class ReadingRepository {
             RepositoryCallback<List<ReadingHistoryEntity>> callback
     ) {
 
+        if (!isValidId(userId)) {
+            postError(
+                    callback,
+                    new IllegalArgumentException("User ID không hợp lệ")
+            );
+            return;
+        }
+
         executorService.execute(() -> {
 
             try {
-
-                if (userId == null || userId.isEmpty()) {
-                    throw new IllegalArgumentException(
-                            "User ID không hợp lệ"
-                    );
-                }
-
                 List<ReadingHistoryEntity> result =
                         readingHistoryDao.getHistoryByUserId(userId);
 
                 postSuccess(callback, result);
 
             } catch (Exception e) {
-
+                Log.e(TAG, "Lỗi khi tải lịch sử đọc", e);
                 postError(callback, e);
             }
         });
@@ -247,18 +269,19 @@ public class ReadingRepository {
             RepositoryCallback<List<ReadingHistoryEntity>> callback
     ) {
 
+        if (!isValidId(userId) || !isValidId(storyId)) {
+            postError(
+                    callback,
+                    new IllegalArgumentException(
+                            "User ID hoặc Story ID không hợp lệ"
+                    )
+            );
+            return;
+        }
+
         executorService.execute(() -> {
 
             try {
-
-                if (userId == null || userId.isEmpty()
-                        || storyId == null || storyId.isEmpty()) {
-
-                    throw new IllegalArgumentException(
-                            "User ID hoặc Story ID không hợp lệ"
-                    );
-                }
-
                 List<ReadingHistoryEntity> result =
                         readingHistoryDao.getHistoryByStoryId(
                                 userId,
@@ -268,13 +291,12 @@ public class ReadingRepository {
                 postSuccess(callback, result);
 
             } catch (Exception e) {
-
+                Log.e(TAG, "Lỗi khi tải lịch sử truyện", e);
                 postError(callback, e);
             }
         });
     }
 
-    // Xóa một bản ghi lịch sử đọc.
     public void deleteHistory(
             ReadingHistoryEntity history,
             Runnable onComplete
@@ -283,7 +305,6 @@ public class ReadingRepository {
         executorService.execute(() -> {
 
             try {
-
                 if (history == null) {
                     throw new IllegalArgumentException(
                             "Reading history không được null"
@@ -291,17 +312,14 @@ public class ReadingRepository {
                 }
 
                 readingHistoryDao.deleteHistory(history);
-
                 postComplete(onComplete);
 
             } catch (Exception e) {
-
                 Log.e(TAG, "Lỗi khi xóa lịch sử đọc", e);
             }
         });
     }
 
-    // Xóa toàn bộ lịch sử đọc của người dùng.
     public void deleteAllHistoryByUserId(
             String userId,
             Runnable onComplete
@@ -310,27 +328,28 @@ public class ReadingRepository {
         executorService.execute(() -> {
 
             try {
-
-                if (userId == null || userId.isEmpty()) {
+                if (!isValidId(userId)) {
                     throw new IllegalArgumentException(
                             "User ID không hợp lệ"
                     );
                 }
 
                 readingHistoryDao.deleteAllHistoryByUserId(userId);
-
                 postComplete(onComplete);
 
             } catch (Exception e) {
-
                 Log.e(TAG, "Lỗi khi xóa toàn bộ lịch sử đọc", e);
             }
         });
     }
 
     // =========================
-    // Callback helpers
+    // HELPERS
     // =========================
+
+    private boolean isValidId(String id) {
+        return id != null && !id.trim().isEmpty();
+    }
 
     private void postComplete(Runnable callback) {
 
@@ -345,9 +364,7 @@ public class ReadingRepository {
     ) {
 
         if (callback != null) {
-            mainHandler.post(() ->
-                    callback.onSuccess(result)
-            );
+            mainHandler.post(() -> callback.onSuccess(result));
         }
     }
 
@@ -357,20 +374,26 @@ public class ReadingRepository {
     ) {
 
         if (callback != null) {
-            mainHandler.post(() ->
-                    callback.onError(error)
-            );
+            mainHandler.post(() -> callback.onError(error));
         }
     }
 
-    // =========================
-    // Repository Callback
-    // =========================
+    private void postError(
+            ErrorCallback callback,
+            Exception error
+    ) {
+
+        if (callback != null) {
+            mainHandler.post(() -> callback.onError(error));
+        }
+    }
 
     public interface RepositoryCallback<T> {
-
         void onSuccess(T result);
+        void onError(Exception e);
+    }
 
+    public interface ErrorCallback {
         void onError(Exception e);
     }
 }

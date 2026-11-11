@@ -1,12 +1,19 @@
-
 package com.example.storyverse.data.local.entity;
 
 import androidx.annotation.NonNull;
 import androidx.room.Entity;
 import androidx.room.Ignore;
+import androidx.room.Index;
 import androidx.room.PrimaryKey;
 
-@Entity(tableName = "stories")
+@Entity(
+        tableName = "stories",
+        indices = {
+                @Index(value = {"status", "createdAt"}),
+                @Index(value = {"status", "updatedAt"}),
+                @Index(value = {"authorId"})
+        }
+)
 public class StoryEntity {
 
     @PrimaryKey
@@ -27,11 +34,9 @@ public class StoryEntity {
     private double ratingAverage;
     private long ratingCount;
 
-    // Thông tin số lượng chương
     private long chapterCount;
     private long previewChapterCount;
 
-    // Thông tin nguồn dữ liệu và giấy phép
     private String source;
     private String sourceUrl;
     private String license;
@@ -39,11 +44,9 @@ public class StoryEntity {
     private long createdAt;
     private long updatedAt;
 
-    // Constructor dành cho Room
     public StoryEntity() {
     }
 
-    // Constructor sử dụng trong Java
     @Ignore
     public StoryEntity(
             @NonNull String storyId,

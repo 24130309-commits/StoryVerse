@@ -1,11 +1,6 @@
 
 package com.example.storyverse.ui.reader;
 
-import androidx.recyclerview.widget.LinearLayoutManager;
-import androidx.recyclerview.widget.RecyclerView;
-
-import com.example.storyverse.adapter.ChapterAdapter;
-
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.content.res.ColorStateList;
@@ -21,6 +16,7 @@ import android.widget.RadioButton;
 import android.widget.RadioGroup;
 import android.widget.ScrollView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -28,54 +24,45 @@ import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.navigation.NavController;
 import androidx.navigation.Navigation;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.storyverse.R;
+import com.example.storyverse.adapter.ChapterAdapter;
 import com.example.storyverse.data.local.entity.ChapterEntity;
 import com.example.storyverse.data.local.entity.ReadingHistoryEntity;
 import com.example.storyverse.data.local.entity.ReadingProgressEntity;
 import com.example.storyverse.viewmodel.ReaderViewModel;
+import com.google.android.material.bottomsheet.BottomSheetBehavior;
 import com.google.android.material.bottomsheet.BottomSheetDialog;
+import com.google.firebase.auth.FirebaseAuth;
 
 import java.util.List;
 import java.util.UUID;
 
 public class ReaderFragment extends Fragment {
 
-    // Dữ liệu dùng để chạy thử chức năng đọc truyện.
-    private static final String DEMO_STORY_ID =
-            "story_demo_001";
+    private static final String DEFAULT_STORY_ID = "story_001";
+    private static final String ARG_STORY_ID = "storyId";
+    private static final String KEY_GUEST_USER_ID = "guest_user_id";
 
-    private static final String DEMO_USER_ID =
-            "demo_user";
+    private static final int PRIMARY_COLOR = Color.parseColor("#6D5DFB");
+    private static final int BUTTON_TEXT_COLOR = Color.WHITE;
+    private static final float DISABLED_ALPHA = 0.45f;
 
-    // Màu sắc sử dụng trong giao diện đọc truyện.
-    private static final int PRIMARY_COLOR =
-            Color.parseColor("#6D5DFB");
+    private static final String PREF_READER_SETTINGS = "reader_settings";
+    private static final String KEY_FONT_SIZE = "font_size";
+    private static final String KEY_BACKGROUND = "background";
+    private static final String KEY_LINE_SPACING = "line_spacing_extra";
+    private static final String ARG_STORY_TITLE = "storyTitle";
 
-    private static final int BUTTON_TEXT_COLOR =
-            Color.WHITE;
+    private static final float FONT_SIZE_SMALL = 14f;
+    private static final float FONT_SIZE_MEDIUM = 16f;
+    private static final float FONT_SIZE_LARGE = 19f;
 
-    private static final float DISABLED_ALPHA =
-            0.45f;
-
-    // Các tùy chọn đọc truyện được lưu trên thiết bị.
-    private static final String PREF_READER_SETTINGS =
-            "reader_settings";
-
-    private static final String KEY_FONT_SIZE =
-            "font_size";
-
-    private static final String KEY_BACKGROUND =
-            "background";
-
-    private static final float FONT_SIZE_SMALL =
-            14f;
-
-    private static final float FONT_SIZE_MEDIUM =
-            16f;
-
-    private static final float FONT_SIZE_LARGE =
-            19f;
+    private static final float LINE_SPACING_COMPACT = 4f;
+    private static final float LINE_SPACING_NORMAL = 8f;
+    private static final float LINE_SPACING_RELAXED = 12f;
 
     private static final int READER_BG_LIGHT =
             Color.parseColor("#FFFFFF");
@@ -94,49 +81,51 @@ public class ReaderFragment extends Fragment {
 
     private ReaderViewModel readerViewModel;
 
-    // Các thành phần hiển thị trên màn hình đọc truyện.
     private ImageButton btnBack;
     private ImageButton btnChapterList;
     private ImageButton btnReaderSettings;
+
     private Button btnPreviousChapter;
     private Button btnNextChapter;
+
     private TextView tvReaderTitle;
     private TextView tvChapterNumber;
     private TextView tvChapterTitle;
     private TextView tvChapterContent;
     private TextView tvChapterProgress;
+    private TextView tvReaderAttribution;
+
     private ProgressBar progressReading;
     private ScrollView scrollReader;
 
-    // Ghi nhớ cỡ chữ và màu nền mà người đọc đã chọn.
     private SharedPreferences readerPreferences;
 
-    private float currentFontSize =
-            FONT_SIZE_MEDIUM;
+    private String currentStoryId;
+    private String currentStoryTitle = "Đang đọc truyện";
+    private String currentStoryAuthor;
+    private String currentStorySource;
+    private String currentStorySourceUrl;
+    private String currentStoryLicense;
+    private String currentUserId;
 
-    private String currentBackground =
-            "cream";
+    private float currentFontSize = FONT_SIZE_MEDIUM;
+    private float currentLineSpacingExtra = LINE_SPACING_NORMAL;
+    private String currentBackground = "cream";
 
-    // Thông tin cần thiết để lưu và khôi phục vị trí đọc.
     private int pendingScrollPosition = 0;
 
     private boolean shouldRestoreScroll = false;
-
     private boolean isRestoringScroll = false;
 
     private boolean chaptersLoaded = false;
-
     private boolean progressLoaded = false;
-
     private boolean progressLoadRequested = false;
 
     private int lastSavedProgress = -1;
 
     private String lastHistoryChapterId = null;
 
-    // Kiểm tra xem có thể chuyển sang chương trước hoặc sau hay không.
     private boolean canGoPrevious = false;
-
     private boolean canGoNext = false;
 
     @Nullable
@@ -146,7 +135,6 @@ public class ReaderFragment extends Fragment {
             @Nullable ViewGroup container,
             @Nullable Bundle savedInstanceState
     ) {
-
         return inflater.inflate(
                 R.layout.fragment_reader,
                 container,
@@ -159,140 +147,172 @@ public class ReaderFragment extends Fragment {
             @NonNull View view,
             @Nullable Bundle savedInstanceState
     ) {
+        super.onViewCreated(view, savedInstanceState);
 
-        super.onViewCreated(
-                view,
-                savedInstanceState
-        );
-
-        // Khởi tạo các thành phần giao diện.
         initViews(view);
 
-        // Lấy lại cài đặt đọc truyện đã lưu trước đó.
-        readerPreferences =
-                requireContext().getSharedPreferences(
-                        PREF_READER_SETTINGS,
-                        Context.MODE_PRIVATE
-                );
+        readerPreferences = requireContext().getSharedPreferences(
+                PREF_READER_SETTINGS,
+                Context.MODE_PRIVATE
+        );
 
+        initializeReaderIdentity();
         loadReaderSettings();
 
-        // Kết nối ViewModel để xử lý dữ liệu đọc truyện.
-        readerViewModel =
-                new ViewModelProvider(this)
-                        .get(ReaderViewModel.class);
+        readerViewModel = new ViewModelProvider(this)
+                .get(ReaderViewModel.class);
 
         setupButtonAppearance();
         setupListeners(view);
         observeViewModel();
 
-        // Thêm dữ liệu chương mẫu để kiểm tra giao diện đọc.
-        readerViewModel.insertSampleChapters(
-                DEMO_STORY_ID
-        );
+        readerViewModel.loadChapters(currentStoryId);
+    }
+
+    private void initializeReaderIdentity() {
+
+        Bundle args = getArguments();
+
+        if (args != null) {
+
+            currentStoryId = args.getString(ARG_STORY_ID);
+
+            String title = args.getString(ARG_STORY_TITLE);
+
+            if (title != null && !title.trim().isEmpty()) {
+                currentStoryTitle = title.trim();
+            }
+
+            currentStoryAuthor = args.getString("storyAuthor");
+            currentStorySource = args.getString("storySource");
+            currentStorySourceUrl = args.getString("storySourceUrl");
+            currentStoryLicense = args.getString("storyLicense");
+        }
+
+        if (tvReaderAttribution != null) {
+
+            StringBuilder attribution = new StringBuilder();
+
+            if (currentStoryAuthor != null
+                    && !currentStoryAuthor.trim().isEmpty()) {
+
+                attribution.append("Tác giả: ")
+                        .append(currentStoryAuthor.trim());
+            }
+
+            if (currentStorySource != null
+                    && !currentStorySource.trim().isEmpty()) {
+
+                if (attribution.length() > 0) {
+                    attribution.append("\n");
+                }
+
+                attribution.append("Nguồn: ")
+                        .append(currentStorySource.trim());
+            }
+
+            if (currentStorySourceUrl != null
+                    && !currentStorySourceUrl.trim().isEmpty()) {
+
+                if (attribution.length() > 0) {
+                    attribution.append("\n");
+                }
+
+                attribution.append(currentStorySourceUrl.trim());
+            }
+
+            if (currentStoryLicense != null
+                    && !currentStoryLicense.trim().isEmpty()) {
+
+                if (attribution.length() > 0) {
+                    attribution.append("\n");
+                }
+
+                attribution.append("Giấy phép: ")
+                        .append(currentStoryLicense.trim());
+            }
+
+            tvReaderAttribution.setText(attribution.toString());
+
+            tvReaderAttribution.setVisibility(
+                    attribution.length() == 0
+                            ? View.GONE
+                            : View.VISIBLE
+            );
+        }
+
+        if (currentStoryId == null
+                || currentStoryId.trim().isEmpty()) {
+
+            currentStoryId = DEFAULT_STORY_ID;
+        }
+
+        if (FirebaseAuth.getInstance().getCurrentUser() != null) {
+
+            currentUserId = FirebaseAuth.getInstance()
+                    .getCurrentUser()
+                    .getUid();
+
+        } else {
+
+            currentUserId = readerPreferences.getString(
+                    KEY_GUEST_USER_ID,
+                    null
+            );
+
+            if (currentUserId == null
+                    || currentUserId.trim().isEmpty()) {
+
+                currentUserId = "guest_" + UUID.randomUUID();
+
+                readerPreferences.edit()
+                        .putString(KEY_GUEST_USER_ID, currentUserId)
+                        .apply();
+            }
+        }
     }
 
     private void initViews(View view) {
 
-        btnBack =
-                view.findViewById(
-                        R.id.btn_back
-                );
-
-        // Nút ba gạch dùng để mở danh sách chương.
-        btnChapterList =
-                view.findViewById(
-                        R.id.btn_chapter_list
-                );
-
-        btnReaderSettings =
-                view.findViewById(
-                        R.id.btn_reader_settings
-                );
+        btnBack = view.findViewById(R.id.btn_back);
+        btnChapterList = view.findViewById(R.id.btn_chapter_list);
+        btnReaderSettings = view.findViewById(R.id.btn_reader_settings);
 
         btnPreviousChapter =
-                view.findViewById(
-                        R.id.btn_previous_chapter
-                );
+                view.findViewById(R.id.btn_previous_chapter);
 
         btnNextChapter =
-                view.findViewById(
-                        R.id.btn_next_chapter
-                );
+                view.findViewById(R.id.btn_next_chapter);
 
-        tvReaderTitle =
-                view.findViewById(
-                        R.id.tv_reader_title
-                );
+        tvReaderTitle = view.findViewById(R.id.tv_reader_title);
+        tvChapterNumber = view.findViewById(R.id.tv_chapter_number);
+        tvChapterTitle = view.findViewById(R.id.tv_chapter_title);
+        tvChapterContent = view.findViewById(R.id.tv_chapter_content);
+        tvChapterProgress = view.findViewById(R.id.tv_chapter_progress);
+        tvReaderAttribution =
+                view.findViewById(R.id.tv_reader_attribution);
 
-        tvChapterNumber =
-                view.findViewById(
-                        R.id.tv_chapter_number
-                );
-
-        tvChapterTitle =
-                view.findViewById(
-                        R.id.tv_chapter_title
-                );
-
-        tvChapterContent =
-                view.findViewById(
-                        R.id.tv_chapter_content
-                );
-
-        tvChapterProgress =
-                view.findViewById(
-                        R.id.tv_chapter_progress
-                );
-
-        progressReading =
-                view.findViewById(
-                        R.id.progress_reading
-                );
-
-        scrollReader =
-                view.findViewById(
-                        R.id.scroll_reader
-                );
+        progressReading = view.findViewById(R.id.progress_reading);
+        scrollReader = view.findViewById(R.id.scroll_reader);
     }
 
     private void setupButtonAppearance() {
 
         ColorStateList buttonTint =
-                ColorStateList.valueOf(
-                        PRIMARY_COLOR
-                );
+                ColorStateList.valueOf(PRIMARY_COLOR);
 
-        btnPreviousChapter.setBackgroundTintList(
-                buttonTint
-        );
+        btnPreviousChapter.setBackgroundTintList(buttonTint);
+        btnNextChapter.setBackgroundTintList(buttonTint);
 
-        btnNextChapter.setBackgroundTintList(
-                buttonTint
-        );
+        btnPreviousChapter.setTextColor(BUTTON_TEXT_COLOR);
+        btnNextChapter.setTextColor(BUTTON_TEXT_COLOR);
 
-        btnPreviousChapter.setTextColor(
-                BUTTON_TEXT_COLOR
-        );
-
-        btnNextChapter.setTextColor(
-                BUTTON_TEXT_COLOR
-        );
-
-        setButtonState(
-                btnPreviousChapter,
-                false
-        );
-
-        setButtonState(
-                btnNextChapter,
-                false
-        );
+        setButtonState(btnPreviousChapter, false);
+        setButtonState(btnNextChapter, false);
     }
 
     private void setupListeners(View view) {
 
-        // Quay lại màn hình trước và lưu vị trí đang đọc.
         btnBack.setOnClickListener(v -> {
 
             saveCurrentReadingState();
@@ -303,12 +323,8 @@ public class ReaderFragment extends Fragment {
             navController.navigateUp();
         });
 
-        // Mở danh sách chương khi nhấn nút tương ứng.
-        btnChapterList.setOnClickListener(
-                v -> showChapterList()
-        );
+        btnChapterList.setOnClickListener(v -> showChapterList());
 
-        // Chuyển về chương trước nếu vẫn còn chương để chuyển.
         btnPreviousChapter.setOnClickListener(v -> {
 
             if (!canGoPrevious) {
@@ -316,20 +332,16 @@ public class ReaderFragment extends Fragment {
             }
 
             ChapterEntity currentChapter =
-                    readerViewModel
-                            .getCurrentChapter()
-                            .getValue();
+                    readerViewModel.getCurrentChapter().getValue();
 
             if (currentChapter == null) {
                 return;
             }
 
             saveCurrentReadingState();
-
             readerViewModel.previousChapter();
         });
 
-        // Chuyển sang chương tiếp theo.
         btnNextChapter.setOnClickListener(v -> {
 
             if (!canGoNext) {
@@ -337,288 +349,271 @@ public class ReaderFragment extends Fragment {
             }
 
             ChapterEntity currentChapter =
-                    readerViewModel
-                            .getCurrentChapter()
-                            .getValue();
+                    readerViewModel.getCurrentChapter().getValue();
 
             if (currentChapter == null) {
                 return;
             }
 
             saveCurrentReadingState();
-
             readerViewModel.nextChapter();
         });
 
-        // Mở phần cài đặt giao diện đọc truyện.
         btnReaderSettings.setOnClickListener(
                 v -> showReaderSettings()
         );
 
-        // Cập nhật tiến độ mỗi khi người đọc cuộn nội dung.
         scrollReader.setOnScrollChangeListener(
-                (v,
-                 scrollX,
-                 scrollY,
-                 oldScrollX,
-                 oldScrollY) -> {
-
-                    if (isRestoringScroll) {
-
-                        updateReadingProgress();
-
-                        return;
-                    }
+                (v, scrollX, scrollY, oldScrollX, oldScrollY) -> {
 
                     updateReadingProgress();
 
-                    saveProgressIfNeeded();
+                    if (!isRestoringScroll) {
+                        saveProgressIfNeeded();
+                    }
                 }
         );
     }
 
     private void showChapterList() {
 
-        View bottomSheetView =
-                getLayoutInflater().inflate(
-                        R.layout.bottom_sheet_chapter_list,
-                        null
-                );
+        View bottomSheetView = getLayoutInflater().inflate(
+                R.layout.bottom_sheet_chapter_list,
+                null
+        );
 
         BottomSheetDialog dialog =
-                new BottomSheetDialog(
-                        requireContext()
-                );
+                new BottomSheetDialog(requireContext());
 
-        dialog.setContentView(
-                bottomSheetView
-        );
+        dialog.setContentView(bottomSheetView);
 
         RecyclerView recyclerView =
-                bottomSheetView.findViewById(
-                        R.id.rv_chapter_list
-                );
+                bottomSheetView.findViewById(R.id.rv_chapter_list);
 
         recyclerView.setLayoutManager(
-                new LinearLayoutManager(
-                        requireContext()
-                )
+                new LinearLayoutManager(requireContext())
         );
 
-        // Xử lý khi người đọc chọn một chương trong danh sách.
-        ChapterAdapter adapter =
-                new ChapterAdapter(chapter -> {
+        ChapterAdapter adapter = new ChapterAdapter(chapter -> {
 
-                    if (chapter == null) {
-                        return;
-                    }
+            if (chapter == null) {
+                return;
+            }
 
-                    // Lưu vị trí của chương đang đọc trước khi chuyển.
-                    saveCurrentReadingState();
+            saveCurrentReadingState();
 
-                    readerViewModel.selectChapter(
-                            chapter
-                    );
+            readerViewModel.selectChapter(chapter);
 
-                    dialog.dismiss();
-                });
+            dialog.dismiss();
+        });
 
-        recyclerView.setAdapter(
-                adapter
-        );
+        recyclerView.setAdapter(adapter);
 
-        // Lấy danh sách chương đã được tải từ ViewModel.
         List<ChapterEntity> chapters =
-                readerViewModel
-                        .getChapters()
-                        .getValue();
+                readerViewModel.getChapters().getValue();
 
-        adapter.setChapters(
-                chapters
-        );
+        adapter.setChapters(chapters);
 
-        // Đánh dấu chương hiện tại trong danh sách.
+        TextView tvChapterListSubtitle =
+                bottomSheetView.findViewById(
+                        R.id.tv_chapter_list_subtitle
+                );
+
+        int chapterCount =
+                chapters != null ? chapters.size() : 0;
+
+        if (tvChapterListSubtitle != null) {
+
+            tvChapterListSubtitle.setText(
+                    chapterCount > 0
+                            ? chapterCount
+                              + " chương · Chọn chương bạn muốn tiếp tục đọc"
+                            : "Truyện chưa có chương được lưu trên thiết bị"
+            );
+        }
+
         ChapterEntity currentChapter =
-                readerViewModel
-                        .getCurrentChapter()
-                        .getValue();
+                readerViewModel.getCurrentChapter().getValue();
 
         if (currentChapter != null) {
-
             adapter.setCurrentChapter(
                     currentChapter.getChapterId()
             );
         }
 
-        if (chapters == null ||
-                chapters.isEmpty()) {
+        if (chapters == null || chapters.isEmpty()) {
 
-            android.widget.Toast.makeText(
+            Toast.makeText(
                     requireContext(),
                     "Chưa có chương nào để hiển thị",
-                    android.widget.Toast.LENGTH_SHORT
+                    Toast.LENGTH_SHORT
             ).show();
         }
+
+        dialog.setOnShowListener(ignored -> {
+
+            View sheet = dialog.findViewById(
+                    com.google.android.material.R.id.design_bottom_sheet
+            );
+
+            if (sheet != null) {
+
+                BottomSheetBehavior<View> behavior =
+                        BottomSheetBehavior.from(sheet);
+
+                behavior.setState(
+                        BottomSheetBehavior.STATE_EXPANDED
+                );
+
+                behavior.setSkipCollapsed(true);
+            }
+        });
 
         dialog.show();
     }
 
     private void showReaderSettings() {
 
-        View bottomSheetView =
-                getLayoutInflater()
-                        .inflate(
-                                R.layout.bottom_sheet_reader_settings,
-                                null
-                        );
-
-        BottomSheetDialog bottomSheetDialog =
-                new BottomSheetDialog(
-                        requireContext()
-                );
-
-        bottomSheetDialog.setContentView(
-                bottomSheetView
+        View bottomSheetView = getLayoutInflater().inflate(
+                R.layout.bottom_sheet_reader_settings,
+                null
         );
 
-        // Các lựa chọn cỡ chữ.
+        BottomSheetDialog bottomSheetDialog =
+                new BottomSheetDialog(requireContext());
+
+        bottomSheetDialog.setContentView(bottomSheetView);
+
         RadioGroup rgFontSize =
-                bottomSheetView.findViewById(
-                        R.id.rg_font_size
-                );
+                bottomSheetView.findViewById(R.id.rg_font_size);
 
         RadioButton rbFontSmall =
-                bottomSheetView.findViewById(
-                        R.id.rb_font_small
-                );
+                bottomSheetView.findViewById(R.id.rb_font_small);
 
         RadioButton rbFontMedium =
-                bottomSheetView.findViewById(
-                        R.id.rb_font_medium
-                );
+                bottomSheetView.findViewById(R.id.rb_font_medium);
 
         RadioButton rbFontLarge =
-                bottomSheetView.findViewById(
-                        R.id.rb_font_large
-                );
+                bottomSheetView.findViewById(R.id.rb_font_large);
 
-        // Các lựa chọn màu nền.
         RadioGroup rgBackground =
                 bottomSheetView.findViewById(
                         R.id.rg_reader_background
                 );
 
         RadioButton rbBgLight =
-                bottomSheetView.findViewById(
-                        R.id.rb_bg_light
-                );
+                bottomSheetView.findViewById(R.id.rb_bg_light);
 
         RadioButton rbBgCream =
-                bottomSheetView.findViewById(
-                        R.id.rb_bg_cream
-                );
+                bottomSheetView.findViewById(R.id.rb_bg_cream);
 
         RadioButton rbBgDark =
+                bottomSheetView.findViewById(R.id.rb_bg_dark);
+
+        RadioGroup rgLineSpacing =
+                bottomSheetView.findViewById(R.id.rg_line_spacing);
+
+        RadioButton rbSpacingCompact =
                 bottomSheetView.findViewById(
-                        R.id.rb_bg_dark
+                        R.id.rb_spacing_compact
                 );
 
-        // Hiển thị lại cỡ chữ đã chọn ở lần đọc trước.
-        if (currentFontSize ==
-                FONT_SIZE_SMALL) {
+        RadioButton rbSpacingNormal =
+                bottomSheetView.findViewById(
+                        R.id.rb_spacing_normal
+                );
 
+        RadioButton rbSpacingRelaxed =
+                bottomSheetView.findViewById(
+                        R.id.rb_spacing_relaxed
+                );
+
+        if (currentFontSize == FONT_SIZE_SMALL) {
             rbFontSmall.setChecked(true);
 
-        } else if (
-                currentFontSize ==
-                        FONT_SIZE_LARGE
-        ) {
-
+        } else if (currentFontSize == FONT_SIZE_LARGE) {
             rbFontLarge.setChecked(true);
 
         } else {
-
             rbFontMedium.setChecked(true);
         }
 
-        // Hiển thị lại màu nền đã chọn.
+        if (currentLineSpacingExtra <= LINE_SPACING_COMPACT) {
+            rbSpacingCompact.setChecked(true);
+
+        } else if (currentLineSpacingExtra >= LINE_SPACING_RELAXED) {
+            rbSpacingRelaxed.setChecked(true);
+
+        } else {
+            rbSpacingNormal.setChecked(true);
+        }
+
         switch (currentBackground) {
 
             case "light":
-
                 rbBgLight.setChecked(true);
-
                 break;
 
             case "dark":
-
                 rbBgDark.setChecked(true);
-
                 break;
 
             default:
-
                 rbBgCream.setChecked(true);
-
                 break;
         }
 
-        // Thay đổi cỡ chữ ngay khi người đọc chọn.
-        rgFontSize.setOnCheckedChangeListener(
+        rgFontSize.setOnCheckedChangeListener((group, checkedId) -> {
+
+            if (checkedId == R.id.rb_font_small) {
+                currentFontSize = FONT_SIZE_SMALL;
+
+            } else if (checkedId == R.id.rb_font_large) {
+                currentFontSize = FONT_SIZE_LARGE;
+
+            } else {
+                currentFontSize = FONT_SIZE_MEDIUM;
+            }
+
+            applyReaderSettings();
+            saveReaderSettings();
+        });
+
+        rgLineSpacing.setOnCheckedChangeListener(
                 (group, checkedId) -> {
 
-                    if (checkedId ==
-                            R.id.rb_font_small) {
+                    if (checkedId == R.id.rb_spacing_compact) {
+                        currentLineSpacingExtra =
+                                LINE_SPACING_COMPACT;
 
-                        currentFontSize =
-                                FONT_SIZE_SMALL;
-
-                    } else if (
-                            checkedId ==
-                                    R.id.rb_font_large
-                    ) {
-
-                        currentFontSize =
-                                FONT_SIZE_LARGE;
+                    } else if (checkedId == R.id.rb_spacing_relaxed) {
+                        currentLineSpacingExtra =
+                                LINE_SPACING_RELAXED;
 
                     } else {
-
-                        currentFontSize =
-                                FONT_SIZE_MEDIUM;
+                        currentLineSpacingExtra =
+                                LINE_SPACING_NORMAL;
                     }
 
                     applyReaderSettings();
-
                     saveReaderSettings();
                 }
         );
 
-        // Thay đổi màu nền theo lựa chọn của người đọc.
         rgBackground.setOnCheckedChangeListener(
                 (group, checkedId) -> {
 
-                    if (checkedId ==
-                            R.id.rb_bg_light) {
+                    if (checkedId == R.id.rb_bg_light) {
+                        currentBackground = "light";
 
-                        currentBackground =
-                                "light";
-
-                    } else if (
-                            checkedId ==
-                                    R.id.rb_bg_dark
-                    ) {
-
-                        currentBackground =
-                                "dark";
+                    } else if (checkedId == R.id.rb_bg_dark) {
+                        currentBackground = "dark";
 
                     } else {
-
-                        currentBackground =
-                                "cream";
+                        currentBackground = "cream";
                     }
 
                     applyReaderSettings();
-
                     saveReaderSettings();
                 }
         );
@@ -628,293 +623,312 @@ public class ReaderFragment extends Fragment {
 
     private void applyReaderSettings() {
 
-        tvChapterContent.setTextSize(
-                currentFontSize
+        if (tvChapterContent == null
+                || scrollReader == null
+                || getView() == null) {
+            return;
+        }
+
+        tvChapterContent.setTextSize(currentFontSize);
+
+        tvChapterContent.setLineSpacing(
+                dp(currentLineSpacingExtra),
+                1.0f
         );
 
         int backgroundColor;
-
         int textColor;
+        int chromeColor;
+        int headingColor;
 
         switch (currentBackground) {
 
             case "light":
 
-                backgroundColor =
-                        READER_BG_LIGHT;
-
-                textColor =
-                        READER_TEXT_LIGHT;
+                backgroundColor = READER_BG_LIGHT;
+                textColor = READER_TEXT_LIGHT;
+                chromeColor = Color.WHITE;
+                headingColor = Color.parseColor("#202134");
 
                 break;
 
             case "dark":
 
-                backgroundColor =
-                        READER_BG_DARK;
-
-                textColor =
-                        READER_TEXT_DARK;
+                backgroundColor = READER_BG_DARK;
+                textColor = READER_TEXT_DARK;
+                chromeColor = Color.parseColor("#292A2D");
+                headingColor = Color.parseColor("#F1F1F1");
 
                 break;
 
             default:
 
-                backgroundColor =
-                        READER_BG_CREAM;
-
-                textColor =
-                        READER_TEXT_LIGHT;
+                backgroundColor = READER_BG_CREAM;
+                textColor = READER_TEXT_LIGHT;
+                chromeColor = Color.parseColor("#FFFDF8");
+                headingColor = Color.parseColor("#202134");
 
                 break;
         }
 
-        requireView().setBackgroundColor(
-                backgroundColor
+        requireView().setBackgroundColor(backgroundColor);
+
+        scrollReader.setBackgroundColor(backgroundColor);
+
+        tvChapterContent.setTextColor(textColor);
+        tvChapterTitle.setTextColor(headingColor);
+        tvReaderTitle.setTextColor(headingColor);
+
+        tvChapterProgress.setTextColor(
+                currentBackground.equals("dark")
+                        ? Color.parseColor("#C8C5D8")
+                        : Color.parseColor("#77758A")
         );
 
-        scrollReader.setBackgroundColor(
-                backgroundColor
-        );
+        if (tvReaderAttribution != null) {
 
-        tvChapterContent.setTextColor(
-                textColor
-        );
+            tvReaderAttribution.setTextColor(
+                    currentBackground.equals("dark")
+                            ? Color.parseColor("#A7A5B3")
+                            : Color.parseColor("#77758A")
+            );
+
+            tvReaderAttribution.setLinkTextColor(PRIMARY_COLOR);
+        }
+
+        tvChapterNumber.setTextColor(PRIMARY_COLOR);
+
+        int iconColor = currentBackground.equals("dark")
+                ? Color.WHITE
+                : Color.parseColor("#34344A");
+
+        if (btnBack != null) {
+            btnBack.setColorFilter(iconColor);
+        }
+
+        if (btnChapterList != null) {
+            btnChapterList.setColorFilter(iconColor);
+        }
+
+        if (btnReaderSettings != null) {
+            btnReaderSettings.setColorFilter(iconColor);
+        }
+
+        View header = requireView().findViewById(R.id.reader_header);
+
+        View bottomBar =
+                requireView().findViewById(R.id.reader_bottom_bar);
+
+        if (header != null) {
+            header.setBackgroundColor(chromeColor);
+        }
+
+        if (bottomBar != null) {
+            bottomBar.setBackgroundColor(chromeColor);
+        }
     }
 
-    // Lưu cỡ chữ và màu nền để lần sau không phải chọn lại.
+    private float dp(float value) {
+
+        return value * getResources()
+                .getDisplayMetrics()
+                .density;
+    }
+
     private void saveReaderSettings() {
 
         if (readerPreferences == null) {
             return;
         }
 
-        readerPreferences
-                .edit()
-                .putFloat(
-                        KEY_FONT_SIZE,
-                        currentFontSize
-                )
-                .putString(
-                        KEY_BACKGROUND,
-                        currentBackground
-                )
+        readerPreferences.edit()
+                .putFloat(KEY_FONT_SIZE, currentFontSize)
+                .putFloat(KEY_LINE_SPACING, currentLineSpacingExtra)
+                .putString(KEY_BACKGROUND, currentBackground)
                 .apply();
     }
 
-    // Đọc lại cài đặt đã lưu trên thiết bị.
     private void loadReaderSettings() {
 
         if (readerPreferences == null) {
             return;
         }
 
-        currentFontSize =
-                readerPreferences.getFloat(
-                        KEY_FONT_SIZE,
-                        FONT_SIZE_MEDIUM
-                );
+        currentFontSize = readerPreferences.getFloat(
+                KEY_FONT_SIZE,
+                FONT_SIZE_MEDIUM
+        );
 
-        currentBackground =
-                readerPreferences.getString(
-                        KEY_BACKGROUND,
-                        "cream"
-                );
+        currentBackground = readerPreferences.getString(
+                KEY_BACKGROUND,
+                "cream"
+        );
 
-        if (tvChapterContent != null) {
+        currentLineSpacingExtra = readerPreferences.getFloat(
+                KEY_LINE_SPACING,
+                LINE_SPACING_NORMAL
+        );
 
-            applyReaderSettings();
-        }
+        applyReaderSettings();
     }
 
     private void observeViewModel() {
 
-        // Theo dõi danh sách chương sau khi tải dữ liệu.
-        readerViewModel
-                .getChapters()
-                .observe(
-                        getViewLifecycleOwner(),
-                        chapters -> {
+        readerViewModel.getChapters().observe(
+                getViewLifecycleOwner(),
+                chapters -> {
 
-                            if (chapters == null ||
-                                    chapters.isEmpty()) {
+                    if (chapters == null || chapters.isEmpty()) {
 
-                                chaptersLoaded = false;
+                        chaptersLoaded = false;
 
-                                updateChapterButtons(null);
+                        updateChapterButtons(null);
 
-                                return;
-                            }
+                        tvChapterProgress.setText("0 / 0");
 
-                            chaptersLoaded = true;
+                        tvChapterNumber.setText("CHƯA CÓ CHƯƠNG");
 
-                            updateChapterProgress();
+                        tvChapterTitle.setText("");
 
-                            // Chỉ tải tiến độ đọc một lần khi đã có danh sách chương.
-                            if (!progressLoadRequested) {
+                        tvChapterContent.setText(
+                                "Truyện này hiện chưa có nội dung chương "
+                                        + "được lưu trong thiết bị. Hãy quay lại "
+                                        + "trang thông tin truyện để kiểm tra "
+                                        + "nguồn đọc hoặc tải nội dung khi có Internet."
+                        );
 
-                                progressLoadRequested = true;
+                        return;
+                    }
 
-                                readerViewModel.loadProgress(
-                                        DEMO_USER_ID,
-                                        DEMO_STORY_ID
-                                );
-                            }
+                    chaptersLoaded = true;
 
-                            if (progressLoaded &&
-                                    readerViewModel
-                                            .getCurrentChapter()
-                                            .getValue() == null) {
+                    updateChapterProgress();
 
-                                readerViewModel.selectChapter(
-                                        chapters.get(0)
-                                );
-                            }
+                    if (!progressLoadRequested) {
+
+                        progressLoadRequested = true;
+
+                        readerViewModel.loadProgress(
+                                currentUserId,
+                                currentStoryId
+                        );
+                    }
+
+                    if (progressLoaded
+                            && readerViewModel.getCurrentChapter()
+                            .getValue() == null) {
+
+                        readerViewModel.selectChapter(chapters.get(0));
+                    }
+                }
+        );
+
+        readerViewModel.getCurrentChapter().observe(
+                getViewLifecycleOwner(),
+                this::displayChapter
+        );
+
+        readerViewModel.getProgressLoading().observe(
+                getViewLifecycleOwner(),
+                isLoading -> {
+
+                    if (isLoading == null || isLoading) {
+                        return;
+                    }
+
+                    if (!chaptersLoaded || progressLoaded) {
+                        return;
+                    }
+
+                    ReadingProgressEntity progress =
+                            readerViewModel.getReadingProgress().getValue();
+
+                    List<ChapterEntity> chapterList =
+                            readerViewModel.getChapters().getValue();
+
+                    if (chapterList == null || chapterList.isEmpty()) {
+                        return;
+                    }
+
+                    progressLoaded = true;
+
+                    // Người dùng chưa từng đọc truyện này.
+                    if (progress == null) {
+
+                        pendingScrollPosition = 0;
+                        shouldRestoreScroll = false;
+
+                        readerViewModel.selectChapter(
+                                chapterList.get(0)
+                        );
+
+                        return;
+                    }
+
+                    // Khôi phục vị trí đọc trước đó.
+                    pendingScrollPosition = Math.max(
+                            0,
+                            progress.getLastPosition()
+                    );
+
+                    shouldRestoreScroll = true;
+
+                    // Tìm chương đã đọc gần nhất.
+                    ChapterEntity savedChapter = null;
+
+                    for (ChapterEntity chapter : chapterList) {
+
+                        if (chapter != null
+                                && chapter.getChapterId() != null
+                                && chapter.getChapterId().equals(
+                                progress.getChapterId()
+                        )) {
+
+                            savedChapter = chapter;
+                            break;
                         }
-                );
+                    }
 
-        // Hiển thị nội dung khi chương hiện tại thay đổi.
-        readerViewModel
-                .getCurrentChapter()
-                .observe(
-                        getViewLifecycleOwner(),
-                        this::displayChapter
-                );
+                    if (savedChapter != null) {
 
-        // Kiểm tra tiến độ cũ để khôi phục vị trí đọc.
-        readerViewModel
-                .getReadingProgress()
-                .observe(
-                        getViewLifecycleOwner(),
-                        progress -> {
+                        readerViewModel.selectChapter(savedChapter);
 
-                            if (progressLoaded) {
-                                return;
-                            }
+                    } else {
 
-                            if (!chaptersLoaded) {
-                                return;
-                            }
+                        pendingScrollPosition = 0;
+                        shouldRestoreScroll = false;
 
-                            progressLoaded = true;
+                        readerViewModel.selectChapter(
+                                chapterList.get(0)
+                        );
+                    }
+                }
+        );
 
-                            List<ChapterEntity> chapters =
-                                    readerViewModel
-                                            .getChapters()
-                                            .getValue();
+        readerViewModel.getLoading().observe(
+                getViewLifecycleOwner(),
+                isLoading -> {
+                    // Có thể kết nối ProgressBar loading tại đây.
+                }
+        );
 
-                            if (chapters == null ||
-                                    chapters.isEmpty()) {
+        readerViewModel.getError().observe(
+                getViewLifecycleOwner(),
+                message -> {
 
-                                return;
-                            }
+                    if (message != null && !message.isEmpty()) {
 
-                            // Nếu chưa có tiến độ thì bắt đầu từ chương đầu tiên.
-                            if (progress == null) {
-
-                                pendingScrollPosition = 0;
-
-                                shouldRestoreScroll = false;
-
-                                readerViewModel.selectChapter(
-                                        chapters.get(0)
-                                );
-
-                                return;
-                            }
-
-                            // Lấy lại vị trí đọc đã lưu trước đó.
-                            pendingScrollPosition =
-                                    Math.max(
-                                            0,
-                                            progress.getLastPosition()
-                                    );
-
-                            shouldRestoreScroll = true;
-
-                            String savedChapterId =
-                                    progress.getChapterId();
-
-                            ChapterEntity savedChapter = null;
-
-                            for (ChapterEntity chapter : chapters) {
-
-                                if (chapter != null &&
-                                        chapter.getChapterId() != null &&
-                                        chapter.getChapterId().equals(
-                                                savedChapterId
-                                        )) {
-
-                                    savedChapter = chapter;
-
-                                    break;
-                                }
-                            }
-
-                            // Nếu chương đã lưu vẫn còn thì mở lại chương đó.
-                            if (savedChapter != null) {
-
-                                readerViewModel.selectChapter(
-                                        savedChapter
-                                );
-
-                            } else {
-
-                                // Nếu không tìm thấy chương cũ thì quay về chương đầu.
-                                pendingScrollPosition = 0;
-
-                                shouldRestoreScroll = false;
-
-                                readerViewModel.selectChapter(
-                                        chapters.get(0)
-                                );
-                            }
-                        }
-                );
-
-        // Hiện tại chưa có giao diện loading riêng cho màn hình đọc.
-        readerViewModel
-                .getLoading()
-                .observe(
-                        getViewLifecycleOwner(),
-                        isLoading -> {
-
-                            if (isLoading == null) {
-                                return;
-                            }
-
-                            /*
-                             * Chưa xử lý Loading UI ở đây.
-                             *
-                             * progressReading là thanh
-                             * tiến độ đọc, không phải loading.
-                             */
-                        }
-                );
-
-        // Thông báo khi quá trình tải hoặc xử lý dữ liệu gặp lỗi.
-        readerViewModel
-                .getError()
-                .observe(
-                        getViewLifecycleOwner(),
-                        message -> {
-
-                            if (message != null &&
-                                    !message.isEmpty()) {
-
-                                android.widget.Toast.makeText(
-                                        requireContext(),
-                                        message,
-                                        android.widget.Toast.LENGTH_SHORT
-                                ).show();
-                            }
-                        }
-                );
+                        Toast.makeText(
+                                requireContext(),
+                                message,
+                                Toast.LENGTH_SHORT
+                        ).show();
+                    }
+                }
+        );
     }
 
-    private void displayChapter(
-            ChapterEntity chapter
-    ) {
+    private void displayChapter(ChapterEntity chapter) {
 
         if (chapter == null) {
             return;
@@ -922,65 +936,69 @@ public class ReaderFragment extends Fragment {
 
         lastSavedProgress = -1;
 
-        // Cập nhật thông tin chương đang được chọn.
-        tvReaderTitle.setText(
-                "Đang đọc truyện"
-        );
+        tvReaderTitle.setText(currentStoryTitle);
 
         tvChapterNumber.setText(
-                "CHƯƠNG " +
-                        chapter.getChapterNumber()
+                "CHƯƠNG " + chapter.getChapterNumber()
         );
 
         tvChapterTitle.setText(
-                chapter.getTitle()
+                chapter.getTitle() != null
+                        ? chapter.getTitle()
+                        : ""
         );
 
-        tvChapterContent.setText(
-                chapter.getContent()
-        );
+        String chapterContent = chapter.getContent();
+
+        if (chapterContent == null
+                || chapterContent.trim().isEmpty()) {
+
+            tvChapterContent.setText(
+                    "Chương này hiện chỉ có thông tin, chưa có "
+                            + "nội dung được lưu. Hãy kiểm tra nguồn truyện "
+                            + "hoặc kết nối Internet để tải nội dung hợp pháp."
+            );
+
+            applyReaderSettings();
+            updateChapterProgress();
+            updateChapterButtons(
+                    readerViewModel.getChapters().getValue()
+            );
+
+            return;
+        }
+
+        tvChapterContent.setText(chapterContent);
 
         applyReaderSettings();
-
         updateChapterProgress();
-
-        // Ghi nhận chương vừa mở vào lịch sử đọc.
         saveHistoryIfNeeded(chapter);
 
-        // Đưa nội dung về vị trí đã lưu hoặc về đầu chương mới.
         scrollReader.post(() -> {
 
             isRestoringScroll = true;
 
             if (shouldRestoreScroll) {
 
-                int contentHeight =
-                        scrollReader
-                                .getChildAt(0)
-                                .getHeight();
+                if (scrollReader.getChildCount() > 0) {
 
-                int visibleHeight =
-                        scrollReader.getHeight();
+                    int contentHeight =
+                            scrollReader.getChildAt(0).getHeight();
 
-                int maxScroll =
-                        Math.max(
-                                0,
-                                contentHeight - visibleHeight
-                        );
+                    int visibleHeight = scrollReader.getHeight();
 
-                int safePosition =
-                        Math.max(
-                                0,
-                                Math.min(
-                                        pendingScrollPosition,
-                                        maxScroll
-                                )
-                        );
+                    int maxScroll = Math.max(
+                            0,
+                            contentHeight - visibleHeight
+                    );
 
-                scrollReader.scrollTo(
-                        0,
-                        safePosition
-                );
+                    int safePosition = Math.max(
+                            0,
+                            Math.min(pendingScrollPosition, maxScroll)
+                    );
+
+                    scrollReader.scrollTo(0, safePosition);
+                }
 
                 shouldRestoreScroll = false;
 
@@ -995,77 +1013,56 @@ public class ReaderFragment extends Fragment {
         });
     }
 
-    // Cập nhật trạng thái hai nút chuyển chương.
     private void updateChapterButtons(
             List<ChapterEntity> chapters
     ) {
 
-        if (chapters == null ||
-                chapters.isEmpty()) {
+        if (chapters == null || chapters.isEmpty()) {
 
             canGoPrevious = false;
-
             canGoNext = false;
 
             setButtonState(btnPreviousChapter, false);
-
             setButtonState(btnNextChapter, false);
 
             return;
         }
 
         ChapterEntity current =
-                readerViewModel
-                        .getCurrentChapter()
-                        .getValue();
+                readerViewModel.getCurrentChapter().getValue();
 
-        if (current == null ||
-                current.getChapterId() == null) {
+        if (current == null || current.getChapterId() == null) {
 
             canGoPrevious = false;
-
             canGoNext = false;
 
             setButtonState(btnPreviousChapter, false);
-
             setButtonState(btnNextChapter, false);
 
             return;
         }
 
-        int currentIndex =
-                findChapterIndex(
-                        chapters,
-                        current.getChapterId()
-                );
+        int currentIndex = findChapterIndex(
+                chapters,
+                current.getChapterId()
+        );
 
         if (currentIndex < 0) {
 
             canGoPrevious = false;
-
             canGoNext = false;
 
             setButtonState(btnPreviousChapter, false);
-
             setButtonState(btnNextChapter, false);
 
             return;
         }
 
         canGoPrevious = currentIndex > 0;
+        canGoNext = currentIndex < chapters.size() - 1;
 
-        canGoNext =
-                currentIndex < chapters.size() - 1;
-
-        setButtonState(
-                btnPreviousChapter,
-                canGoPrevious
-        );
-
-        setButtonState(
-                btnNextChapter,
-                canGoNext
-        );
+        setButtonState(btnPreviousChapter, canGoPrevious);
+        setButtonState(btnNextChapter, canGoNext);
     }
 
     private void setButtonState(
@@ -1081,10 +1078,7 @@ public class ReaderFragment extends Fragment {
                 ColorStateList.valueOf(PRIMARY_COLOR)
         );
 
-        button.setTextColor(
-                BUTTON_TEXT_COLOR
-        );
-
+        button.setTextColor(BUTTON_TEXT_COLOR);
         button.setEnabled(enabled);
 
         button.setAlpha(
@@ -1092,15 +1086,12 @@ public class ReaderFragment extends Fragment {
         );
     }
 
-    // Tìm vị trí của chương trong danh sách.
     private int findChapterIndex(
             List<ChapterEntity> chapters,
             String chapterId
     ) {
 
-        if (chapters == null ||
-                chapterId == null) {
-
+        if (chapters == null || chapterId == null) {
             return -1;
         }
 
@@ -1108,9 +1099,9 @@ public class ReaderFragment extends Fragment {
 
             ChapterEntity chapter = chapters.get(i);
 
-            if (chapter != null &&
-                    chapter.getChapterId() != null &&
-                    chapterId.equals(chapter.getChapterId())) {
+            if (chapter != null
+                    && chapter.getChapterId() != null
+                    && chapterId.equals(chapter.getChapterId())) {
 
                 return i;
             }
@@ -1119,55 +1110,40 @@ public class ReaderFragment extends Fragment {
         return -1;
     }
 
-    // Hiển thị số thứ tự chương hiện tại trên tổng số chương.
     private void updateChapterProgress() {
 
         List<ChapterEntity> chapters =
-                readerViewModel
-                        .getChapters()
-                        .getValue();
+                readerViewModel.getChapters().getValue();
 
         ChapterEntity current =
-                readerViewModel
-                        .getCurrentChapter()
-                        .getValue();
+                readerViewModel.getCurrentChapter().getValue();
 
-        if (chapters == null ||
-                chapters.isEmpty() ||
-                current == null) {
+        if (chapters == null
+                || chapters.isEmpty()
+                || current == null) {
 
             updateChapterButtons(chapters);
-
             return;
         }
 
-        int currentIndex =
-                findChapterIndex(
-                        chapters,
-                        current.getChapterId()
-                );
+        int currentIndex = findChapterIndex(
+                chapters,
+                current.getChapterId()
+        );
 
         if (currentIndex < 0) {
 
             updateChapterButtons(chapters);
-
             return;
         }
 
-        int currentNumber = currentIndex + 1;
-
-        int total = chapters.size();
-
         tvChapterProgress.setText(
-                currentNumber +
-                        " / " +
-                        total
+                (currentIndex + 1) + " / " + chapters.size()
         );
 
         updateChapterButtons(chapters);
     }
 
-    // Tính phần trăm nội dung đã đọc dựa trên vị trí cuộn.
     private int calculateReadingProgress() {
 
         if (scrollReader.getChildCount() == 0) {
@@ -1175,27 +1151,21 @@ public class ReaderFragment extends Fragment {
         }
 
         int contentHeight =
-                scrollReader
-                        .getChildAt(0)
-                        .getHeight();
+                scrollReader.getChildAt(0).getHeight();
 
-        int visibleHeight =
-                scrollReader.getHeight();
+        int visibleHeight = scrollReader.getHeight();
 
-        int maxScroll =
-                contentHeight - visibleHeight;
+        int maxScroll = contentHeight - visibleHeight;
 
         if (maxScroll <= 0) {
             return 100;
         }
 
-        int currentScroll =
-                scrollReader.getScrollY();
+        int currentScroll = scrollReader.getScrollY();
 
-        int progress =
-                (int) (
-                        currentScroll * 100f / maxScroll
-                );
+        int progress = (int) (
+                currentScroll * 100f / maxScroll
+        );
 
         return Math.max(
                 0,
@@ -1205,13 +1175,15 @@ public class ReaderFragment extends Fragment {
 
     private void updateReadingProgress() {
 
-        int progress =
-                calculateReadingProgress();
+        if (progressReading == null) {
+            return;
+        }
+
+        int progress = calculateReadingProgress();
 
         progressReading.setProgress(progress);
     }
 
-    // Chỉ lưu lại khi phần trăm tiến độ có thay đổi.
     private void saveProgressIfNeeded() {
 
         if (isRestoringScroll) {
@@ -1219,16 +1191,13 @@ public class ReaderFragment extends Fragment {
         }
 
         ChapterEntity currentChapter =
-                readerViewModel
-                        .getCurrentChapter()
-                        .getValue();
+                readerViewModel.getCurrentChapter().getValue();
 
         if (currentChapter == null) {
             return;
         }
 
-        int progress =
-                calculateReadingProgress();
+        int progress = calculateReadingProgress();
 
         if (progress == lastSavedProgress) {
             return;
@@ -1240,67 +1209,54 @@ public class ReaderFragment extends Fragment {
         );
     }
 
-    // Lưu chương hiện tại cùng phần trăm và vị trí cuộn.
     private void saveCurrentProgress(
             ChapterEntity chapter,
             int progressPercent
     ) {
 
-        if (chapter == null) {
+        if (chapter == null
+                || chapter.getChapterId() == null
+                || currentUserId == null
+                || currentStoryId == null) {
+
             return;
         }
 
-        int lastPosition =
-                scrollReader.getScrollY();
+        int lastPosition = scrollReader.getScrollY();
 
         ReadingProgressEntity progress =
                 new ReadingProgressEntity();
 
         progress.setProgressId(
-                DEMO_USER_ID +
-                        "_" +
-                        DEMO_STORY_ID
+                currentUserId + "_" + currentStoryId
         );
 
-        progress.setUserId(DEMO_USER_ID);
-
-        progress.setStoryId(DEMO_STORY_ID);
-
-        progress.setChapterId(
-                chapter.getChapterId()
-        );
-
-        progress.setProgressPercent(
-                progressPercent
-        );
-
-        progress.setLastPosition(
-                lastPosition
-        );
-
-        progress.setLastReadAt(
-                System.currentTimeMillis()
-        );
+        progress.setUserId(currentUserId);
+        progress.setStoryId(currentStoryId);
+        progress.setChapterId(chapter.getChapterId());
+        progress.setProgressPercent(progressPercent);
+        progress.setLastPosition(lastPosition);
+        progress.setLastReadAt(System.currentTimeMillis());
 
         lastSavedProgress = progressPercent;
 
         readerViewModel.saveProgress(progress);
     }
 
-    // Lưu trạng thái hiện tại trước khi rời màn hình đọc.
     private void saveCurrentReadingState() {
 
+        if (readerViewModel == null) {
+            return;
+        }
+
         ChapterEntity currentChapter =
-                readerViewModel
-                        .getCurrentChapter()
-                        .getValue();
+                readerViewModel.getCurrentChapter().getValue();
 
         if (currentChapter == null) {
             return;
         }
 
-        int progress =
-                calculateReadingProgress();
+        int progress = calculateReadingProgress();
 
         saveCurrentProgress(
                 currentChapter,
@@ -1308,21 +1264,19 @@ public class ReaderFragment extends Fragment {
         );
     }
 
-    // Lưu lịch sử khi người đọc mở một chương mới.
     private void saveHistoryIfNeeded(
             ChapterEntity chapter
     ) {
 
-        if (chapter == null) {
+        if (chapter == null
+                || chapter.getChapterId() == null
+                || currentUserId == null
+                || currentStoryId == null) {
+
             return;
         }
 
-        String chapterId =
-                chapter.getChapterId();
-
-        if (chapterId == null) {
-            return;
-        }
+        String chapterId = chapter.getChapterId();
 
         if (chapterId.equals(lastHistoryChapterId)) {
             return;
@@ -1337,15 +1291,10 @@ public class ReaderFragment extends Fragment {
                 UUID.randomUUID().toString()
         );
 
-        history.setUserId(DEMO_USER_ID);
-
-        history.setStoryId(DEMO_STORY_ID);
-
+        history.setUserId(currentUserId);
+        history.setStoryId(currentStoryId);
         history.setChapterId(chapterId);
-
-        history.setReadAt(
-                System.currentTimeMillis()
-        );
+        history.setReadAt(System.currentTimeMillis());
 
         readerViewModel.saveHistory(history);
     }
@@ -1353,8 +1302,9 @@ public class ReaderFragment extends Fragment {
     @Override
     public void onPause() {
 
-        // Lưu tiến độ trước khi màn hình tạm dừng.
-        saveCurrentReadingState();
+        if (readerViewModel != null) {
+            saveCurrentReadingState();
+        }
 
         super.onPause();
     }

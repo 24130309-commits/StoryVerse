@@ -1,4 +1,3 @@
-
 package com.example.storyverse.data.repository;
 
 import com.example.storyverse.BuildConfig;
@@ -15,6 +14,9 @@ public class GoogleBooksRepository {
     private static final String BASE_URL =
             "https://www.googleapis.com/books/v1/";
 
+    private static final int DEFAULT_PAGE_SIZE = 20;
+    private static final int MAX_PAGE_SIZE = 40;
+
     private final GoogleBooksService apiService;
     private final String apiKey = BuildConfig.BOOKS_API_KEY;
 
@@ -25,34 +27,72 @@ public class GoogleBooksRepository {
     }
 
     public GoogleBooksRepository() {
+
         apiService = RetrofitClient.createService(
                 BASE_URL,
                 GoogleBooksService.class
         );
     }
 
-    public void searchBooks(String keyword, BooksCallback callback) {
+    // Tương thích với cách gọi cũ.
+    public void searchBooks(
+            String keyword,
+            BooksCallback callback
+    ) {
+
+        searchBooks(
+                keyword,
+                1,
+                DEFAULT_PAGE_SIZE,
+                callback
+        );
+    }
+
+    // page bắt đầu từ 1.
+    public void searchBooks(
+            String keyword,
+            int page,
+            int pageSize,
+            BooksCallback callback
+    ) {
 
         if (callback == null) {
             return;
         }
 
         if (keyword == null || keyword.trim().isEmpty()) {
-            callback.onError("Từ khóa tìm kiếm không được để trống");
+
+            callback.onError(
+                    "Từ khóa tìm kiếm không được để trống"
+            );
+
             return;
         }
 
-        if (apiKey == null || apiKey.trim().isEmpty()) {
-            callback.onError("Chưa cấu hình Google Books API Key");
+        if (page < 1) {
+
+            callback.onError(
+                    "Số trang phải lớn hơn hoặc bằng 1"
+            );
+
             return;
         }
+
+        int safePageSize = Math.max(
+                1,
+                Math.min(pageSize, MAX_PAGE_SIZE)
+        );
+
+        int startIndex = (page - 1) * safePageSize;
 
         apiService.searchBooks(
                 keyword.trim(),
                 "vi",
-                20,
-                0,
-                apiKey
+                safePageSize,
+                startIndex,
+                apiKey == null || apiKey.trim().isEmpty()
+                        ? null
+                        : apiKey.trim()
         ).enqueue(new Callback<GoogleBooksResponse>() {
 
             @Override
@@ -60,11 +100,16 @@ public class GoogleBooksRepository {
                     Call<GoogleBooksResponse> call,
                     Response<GoogleBooksResponse> response
             ) {
-                if (response.isSuccessful() && response.body() != null) {
+
+                if (response.isSuccessful()
+                        && response.body() != null) {
+
                     callback.onSuccess(response.body());
+
                 } else {
+
                     callback.onError(
-                            "Không thể lấy dữ liệu sách. Mã lỗi: "
+                            "Google Books trả về lỗi HTTP: "
                                     + response.code()
                     );
                 }
@@ -75,10 +120,11 @@ public class GoogleBooksRepository {
                     Call<GoogleBooksResponse> call,
                     Throwable throwable
             ) {
+
                 callback.onError(
                         throwable.getMessage() != null
                                 ? throwable.getMessage()
-                                : "Không thể kết nối đến Google Books"
+                                : "Không thể kết nối Google Books"
                 );
             }
         });

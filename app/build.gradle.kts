@@ -13,8 +13,6 @@ if (localPropertiesFile.exists()) {
     localProperties.load(localPropertiesFile.inputStream())
 }
 
-
-
 val booksApiKey = localProperties.getProperty("BOOKS_API_KEY", "")
 
 android {
@@ -33,12 +31,13 @@ android {
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
-        // Khai báo API Key cho BuildConfig
+        // Google Books API Key
         buildConfigField(
             "String",
             "BOOKS_API_KEY",
             "\"$booksApiKey\""
         )
+
     }
 
     buildTypes {
@@ -64,8 +63,10 @@ dependencies {
     implementation(libs.activity.ktx)
     implementation(libs.appcompat)
     implementation(libs.constraintlayout)
+
     implementation("androidx.navigation:navigation-fragment:2.8.9")
     implementation("androidx.navigation:navigation-ui:2.8.9")
+
     implementation(libs.material)
 
     testImplementation(libs.junit)
@@ -86,6 +87,12 @@ dependencies {
     // 3. RETROFIT & GSON
     implementation("com.squareup.retrofit2:retrofit:2.11.0")
     implementation("com.squareup.retrofit2:converter-gson:2.11.0")
+
+    // 3.1. PHÂN TÍCH HTML TỪ WIKISOURCE
+    implementation("org.jsoup:jsoup:1.21.2")
+
+    // 3.2. OKHTTP
+    implementation("com.squareup.okhttp3:okhttp:4.12.0")
 
     // 4. LIFECYCLE & VIEWMODEL
     implementation("androidx.lifecycle:lifecycle-viewmodel:2.8.7")

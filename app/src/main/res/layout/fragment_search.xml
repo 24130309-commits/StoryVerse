@@ -1,14 +1,105 @@
-<?xml version="1.0" encoding="utf-8"?>
-<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="#F6F4FC"
+    android:padding="16dp"
     tools:context=".ui.search.SearchFragment">
 
-    <!-- TODO: Update blank fragment layout -->
     <TextView
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:text="@string/hello_blank_fragment" />
+        android:layout_height="wrap_content"
+        android:text="Khám phá truyện"
+        android:textColor="#25213A"
+        android:textSize="25sp"
+        android:textStyle="bold"
+        android:layout_marginTop="12dp"
+        android:layout_marginBottom="6dp" />
 
-</FrameLayout>
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Tìm kiếm câu chuyện bạn yêu thích"
+        android:textColor="#8A849F"
+        android:textSize="13sp"
+        android:layout_marginBottom="20dp" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="54dp"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:background="@drawable/bg_reader_icon_button"
+        android:paddingStart="14dp"
+        android:paddingEnd="14dp"
+        android:elevation="2dp">
+
+        <ImageView
+            android:layout_width="22dp"
+            android:layout_height="22dp"
+            android:src="@android:drawable/ic_menu_search"
+            android:contentDescription="Tìm kiếm"
+            app:tint="#7564E8" />
+
+        <EditText
+            android:id="@+id/edt_search"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:layout_marginStart="10dp"
+            android:background="@android:color/transparent"
+            android:hint="Nhập tên truyện hoặc tác giả..."
+            android:textColor="#25213A"
+            android:textColorHint="#A19BB2"
+            android:textSize="14sp"
+            android:singleLine="true"
+            android:inputType="text"
+            android:imeOptions="actionSearch"
+            android:padding="0dp" />
+
+    </LinearLayout>
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="22dp"
+        android:layout_marginBottom="10dp"
+        android:text="Kết quả tìm kiếm"
+        android:textColor="#34304D"
+        android:textSize="16sp"
+        android:textStyle="bold" />
+
+    <ProgressBar
+        android:id="@+id/progress_search"
+        android:layout_width="36dp"
+        android:layout_height="36dp"
+        android:layout_gravity="center_horizontal"
+        android:layout_marginTop="12dp"
+        android:indeterminateTint="#7564E8"
+        android:visibility="gone" />
+
+    <TextView
+        android:id="@+id/tv_search_message"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:padding="20dp"
+        android:text="Nhập tên truyện hoặc tác giả để tìm kiếm"
+        android:textColor="#8A849F"
+        android:textSize="14sp"
+        android:visibility="visible" />
+
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/rv_search_results"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:clipToPadding="false"
+        android:paddingTop="4dp"
+        android:paddingBottom="12dp"
+        android:visibility="gone" />
+
+</LinearLayout>

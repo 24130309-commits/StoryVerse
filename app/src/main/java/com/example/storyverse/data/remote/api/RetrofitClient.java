@@ -2,7 +2,9 @@ package com.example.storyverse.data.remote.api;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 
+import okhttp3.OkHttpClient;
 import retrofit2.Retrofit;
 import retrofit2.converter.gson.GsonConverterFactory;
 
@@ -29,14 +31,22 @@ public class RetrofitClient {
 
         final String url = baseUrl;
 
-        return retrofitMap.computeIfAbsent(url, key ->
-                new Retrofit.Builder()
-                        .baseUrl(key)
-                        .addConverterFactory(
-                                GsonConverterFactory.create()
-                        )
-                        .build()
-        );
+        return retrofitMap.computeIfAbsent(url, key -> {
+
+            OkHttpClient client = new OkHttpClient.Builder()
+                    .connectTimeout(30, TimeUnit.SECONDS)
+                    .readTimeout(30, TimeUnit.SECONDS)
+                    .writeTimeout(30, TimeUnit.SECONDS)
+                    .build();
+
+            return new Retrofit.Builder()
+                    .baseUrl(key)
+                    .client(client)
+                    .addConverterFactory(
+                            GsonConverterFactory.create()
+                    )
+                    .build();
+        });
     }
 
     public static <T> T createService(

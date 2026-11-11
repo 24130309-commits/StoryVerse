@@ -1,4 +1,3 @@
-
 package com.example.storyverse.adapter;
 
 import android.graphics.Color;
@@ -21,16 +20,13 @@ import java.util.Locale;
 public class ChapterAdapter
         extends RecyclerView.Adapter<ChapterAdapter.ChapterViewHolder> {
 
-    // Interface xử lý khi người dùng chọn chương
     public interface OnChapterClickListener {
         void onChapterClick(ChapterEntity chapter);
     }
 
     private final List<ChapterEntity> chapters = new ArrayList<>();
-
     private final OnChapterClickListener listener;
 
-    // ID chương hiện tại
     private String currentChapterId;
 
     public ChapterAdapter(OnChapterClickListener listener) {
@@ -56,48 +52,50 @@ public class ChapterAdapter
     ) {
         ChapterEntity chapter = chapters.get(position);
 
-        // Hiển thị số thứ tự chương
-        String chapterNumber = String.format(
-                Locale.getDefault(),
-                "%02d",
-                chapter.getChapterNumber()
+        // Hiển thị số chương
+        holder.tvChapterNumber.setText(
+                String.format(
+                        Locale.getDefault(),
+                        "%02d",
+                        chapter.getChapterNumber()
+                )
         );
 
-        holder.tvChapterNumber.setText(chapterNumber);
-
         // Hiển thị tên chương
-        holder.tvChapterTitle.setText(chapter.getTitle());
+        String title = chapter.getTitle();
+
+        holder.tvChapterTitle.setText(
+                title != null && !title.trim().isEmpty()
+                        ? title
+                        : "Chương " + chapter.getChapterNumber()
+        );
 
         // Kiểm tra chương hiện tại
-        boolean isCurrent =
-                chapter.getChapterId() != null
-                        && chapter.getChapterId().equals(currentChapterId);
+        boolean isCurrent = chapter.getChapterId() != null
+                && chapter.getChapterId().equals(currentChapterId);
+
+        View chapterLayout = holder.layoutChapterContent != null
+                ? holder.layoutChapterContent
+                : holder.itemView;
 
         if (isCurrent) {
-            // Nền tím nhạt
-            holder.layoutChapterContent.setBackgroundResource(
+            chapterLayout.setBackgroundResource(
                     R.drawable.bg_chapter_item_selected
             );
 
-            // Màu số chương
             holder.tvChapterNumber.setTextColor(
                     Color.parseColor("#7059D9")
             );
 
-            // Nền ô số chương
             holder.tvChapterNumber.setBackgroundResource(
                     R.drawable.bg_chapter_item_selected
             );
 
-            // Màu tên chương
             holder.tvChapterTitle.setTextColor(
                     Color.parseColor("#7059D9")
             );
 
-            // Hiện nhãn chương đang đọc
             holder.tvChapterStatus.setVisibility(View.VISIBLE);
-
-            // Hiện dấu tích
             holder.ivChapterSelected.setVisibility(View.VISIBLE);
 
             holder.ivChapterSelected.setColorFilter(
@@ -105,8 +103,7 @@ public class ChapterAdapter
             );
 
         } else {
-            // Giao diện chương bình thường
-            holder.layoutChapterContent.setBackgroundResource(
+            chapterLayout.setBackgroundResource(
                     android.R.color.transparent
             );
 
@@ -122,15 +119,24 @@ public class ChapterAdapter
                     Color.parseColor("#222222")
             );
 
-            // Ẩn nhãn và dấu tích
             holder.tvChapterStatus.setVisibility(View.GONE);
             holder.ivChapterSelected.setVisibility(View.GONE);
+
+            holder.ivChapterSelected.clearColorFilter();
         }
 
-        // Xử lý khi nhấn chọn chương
+        // Xử lý khi nhấn vào một chương
         holder.itemView.setOnClickListener(v -> {
+            int currentPosition = holder.getBindingAdapterPosition();
+
+            if (currentPosition == RecyclerView.NO_POSITION) {
+                return;
+            }
+
+            ChapterEntity selectedChapter = chapters.get(currentPosition);
+
             if (listener != null) {
-                listener.onChapterClick(chapter);
+                listener.onChapterClick(selectedChapter);
             }
         });
     }
@@ -153,8 +159,36 @@ public class ChapterAdapter
 
     // Cập nhật chương đang đọc
     public void setCurrentChapter(String chapterId) {
+        String oldChapterId = currentChapterId;
+
         currentChapterId = chapterId;
-        notifyDataSetChanged();
+
+        int oldPosition = findChapterPosition(oldChapterId);
+        int newPosition = findChapterPosition(currentChapterId);
+
+        if (oldPosition != -1) {
+            notifyItemChanged(oldPosition);
+        }
+
+        if (newPosition != -1 && newPosition != oldPosition) {
+            notifyItemChanged(newPosition);
+        }
+    }
+
+    private int findChapterPosition(String chapterId) {
+        if (chapterId == null) {
+            return -1;
+        }
+
+        for (int i = 0; i < chapters.size(); i++) {
+            ChapterEntity chapter = chapters.get(i);
+
+            if (chapterId.equals(chapter.getChapterId())) {
+                return i;
+            }
+        }
+
+        return -1;
     }
 
     // ViewHolder
