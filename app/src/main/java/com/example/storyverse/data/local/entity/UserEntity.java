@@ -1,7 +1,9 @@
+
 package com.example.storyverse.data.local.entity;
 
 import androidx.annotation.NonNull;
 import androidx.room.Entity;
+import androidx.room.Ignore;
 import androidx.room.PrimaryKey;
 
 @Entity(tableName = "users")
@@ -19,9 +21,12 @@ public class UserEntity {
     private long createdAt;
     private long updatedAt;
 
+    // Constructor dành cho Room
     public UserEntity() {
     }
 
+    // Constructor sử dụng trong Java
+    @Ignore
     public UserEntity(
             @NonNull String userId,
             String email,
