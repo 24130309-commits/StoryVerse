@@ -85,6 +85,23 @@ public class ChapterRepository {
         });
     }
 
+    // Tương thích với các module đang sử dụng phiên bản 2 tham số.
+    public void insertChapters(
+            List<ChapterEntity> chapters,
+            Runnable onComplete,
+            ErrorCallback onError
+    ) {
+        insertChapters(
+                chapters,
+                onComplete,
+                error -> android.util.Log.e(
+                        "ChapterRepository",
+                        "Không thể lưu danh sách chương",
+                        error
+                )
+        );
+    }
+
     public void insertChapters(
             List<ChapterEntity> chapters,
             Runnable onComplete,
