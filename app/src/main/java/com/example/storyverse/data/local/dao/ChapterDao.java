@@ -19,19 +19,14 @@ public interface ChapterDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     void insertChapters(List<ChapterEntity> chapters);
 
-    @Query("SELECT * FROM chapters WHERE storyId = :storyId ORDER BY chapterNumber ASC")
     List<ChapterEntity> getChaptersByStoryId(String storyId);
 
-    @Query("SELECT * FROM chapters WHERE chapterId = :chapterId LIMIT 1")
     ChapterEntity getChapterById(String chapterId);
 
-    @Query("SELECT * FROM chapters WHERE storyId = :storyId AND chapterNumber = :chapterNumber LIMIT 1")
-    ChapterEntity getChapterByNumber(String storyId, int chapterNumber);
 
     @Delete
     void deleteChapter(ChapterEntity chapter);
 
-    @Query("DELETE FROM chapters WHERE storyId = :storyId")
     void deleteChaptersByStoryId(String storyId);
 
     @Query("DELETE FROM chapters")

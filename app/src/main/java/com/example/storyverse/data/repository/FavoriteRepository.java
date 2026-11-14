@@ -49,7 +49,6 @@ public class FavoriteRepository {
             String userId,
             String storyId
     ) {
-        favoriteDao.deleteFavorite(userId, storyId);
     }
 
     public void deleteAllFavoritesByUserId(String userId) {
