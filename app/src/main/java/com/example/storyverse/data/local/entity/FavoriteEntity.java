@@ -7,7 +7,6 @@ import androidx.room.PrimaryKey;
 @Entity(
         tableName = "favorites",
         indices = {
-                @androidx.room.Index(
                         value = {"userId", "storyId"},
                         unique = true
                 )

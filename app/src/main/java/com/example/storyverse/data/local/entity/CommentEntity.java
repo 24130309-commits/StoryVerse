@@ -7,10 +7,6 @@ import androidx.room.PrimaryKey;
 @Entity(
         tableName = "comments",
         indices = {
-                @androidx.room.Index(value = {"userId"}),
-                @androidx.room.Index(value = {"storyId"}),
-                @androidx.room.Index(value = {"chapterId"}),
-                @androidx.room.Index(value = {"parentCommentId"})
         }
 )
 public class CommentEntity {

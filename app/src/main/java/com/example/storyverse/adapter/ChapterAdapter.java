@@ -23,12 +23,7 @@ public class ChapterAdapter
             @NonNull ViewGroup parent,
             int viewType
     ) {
-        View view = LayoutInflater.from(parent.getContext())
-                .inflate(
-                        android.R.layout.simple_list_item_1,
-                        parent,
-                        false
-                );
+        View view = LayoutInflater.from(parent.getContext());
 
         return new ChapterViewHolder(view);
     }
@@ -40,9 +35,7 @@ public class ChapterAdapter
     ) {
         ChapterEntity chapter = chapters.get(position);
 
-        holder.itemView.setContentDescription(
-                chapter.getTitle()
-        );
+
     }
 
     @Override

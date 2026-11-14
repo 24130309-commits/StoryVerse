@@ -19,19 +19,12 @@ public interface CategoryDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     void insertCategories(List<CategoryEntity> categories);
 
-    @Query("SELECT * FROM categories ORDER BY name ASC")
-    List<CategoryEntity> getAllCategories();
 
-    @Query("SELECT * FROM categories WHERE categoryId = :categoryId LIMIT 1")
-    CategoryEntity getCategoryById(String categoryId);
 
-    @Query("SELECT * FROM categories WHERE name LIKE '%' || :keyword || '%' ORDER BY name ASC")
-    List<CategoryEntity> searchCategories(String keyword);
 
     @Delete
     void deleteCategory(CategoryEntity category);
 
-    @Query("DELETE FROM categories WHERE categoryId = :categoryId")
     void deleteCategoryById(String categoryId);
 
     @Query("DELETE FROM categories")

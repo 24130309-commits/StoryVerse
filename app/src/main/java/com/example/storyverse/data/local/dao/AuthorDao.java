@@ -19,19 +19,12 @@ public interface AuthorDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     void insertAuthors(List<AuthorEntity> authors);
 
-    @Query("SELECT * FROM authors ORDER BY name ASC")
-    List<AuthorEntity> getAllAuthors();
 
-    @Query("SELECT * FROM authors WHERE authorId = :authorId LIMIT 1")
-    AuthorEntity getAuthorById(String authorId);
 
-    @Query("SELECT * FROM authors WHERE name LIKE '%' || :keyword || '%' ORDER BY name ASC")
-    List<AuthorEntity> searchAuthors(String keyword);
 
     @Delete
     void deleteAuthor(AuthorEntity author);
 
-    @Query("DELETE FROM authors WHERE authorId = :authorId")
     void deleteAuthorById(String authorId);
 
     @Query("DELETE FROM authors")
