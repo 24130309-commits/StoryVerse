@@ -1,15 +1,16 @@
+
 package com.example.storyverse.data.local.entity;
 
 import androidx.annotation.NonNull;
 import androidx.room.Entity;
-import androidx.room.Ignore;
-import androidx.room.Index;
 import androidx.room.PrimaryKey;
 
 @Entity(
         tableName = "chapters",
         indices = {
-                @Index(value = {"storyId", "chapterNumber"})
+                @androidx.room.Index(
+                        value = {"storyId", "chapterNumber"}
+                )
         }
 )
 public class ChapterEntity {
@@ -22,21 +23,18 @@ public class ChapterEntity {
     private int chapterNumber;
     private String title;
     private String content;
-
-    // Đường dẫn Firebase Storage nếu nội dung chương quá lớn
-    private String contentStoragePath;
-
     private int wordCount;
 
     private long publishedAt;
     private long createdAt;
     private long updatedAt;
 
+    // Cột hỗ trợ lưu đường dẫn nội dung lớn.
+    private String contentStoragePath;
+
     public ChapterEntity() {
     }
 
-    // Giữ constructor cũ để tương thích Reader và ChapterRepository
-    @Ignore
     public ChapterEntity(
             @NonNull String chapterId,
             String storyId,
@@ -100,14 +98,6 @@ public class ChapterEntity {
         this.content = content;
     }
 
-    public String getContentStoragePath() {
-        return contentStoragePath;
-    }
-
-    public void setContentStoragePath(String contentStoragePath) {
-        this.contentStoragePath = contentStoragePath;
-    }
-
     public int getWordCount() {
         return wordCount;
     }
@@ -138,5 +128,13 @@ public class ChapterEntity {
 
     public void setUpdatedAt(long updatedAt) {
         this.updatedAt = updatedAt;
+    }
+
+    public String getContentStoragePath() {
+        return contentStoragePath;
+    }
+
+    public void setContentStoragePath(String contentStoragePath) {
+        this.contentStoragePath = contentStoragePath;
     }
 }

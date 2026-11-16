@@ -1,19 +1,12 @@
-
 package com.example.storyverse.data.local.entity;
 
 import androidx.annotation.NonNull;
 import androidx.room.Entity;
-import androidx.room.Ignore;
-import androidx.room.Index;
 import androidx.room.PrimaryKey;
 
 @Entity(
         tableName = "comments",
         indices = {
-                @Index(value = {"userId"}),
-                @Index(value = {"storyId"}),
-                @Index(value = {"chapterId"}),
-                @Index(value = {"parentCommentId"})
         }
 )
 public class CommentEntity {
@@ -38,12 +31,9 @@ public class CommentEntity {
     private long createdAt;
     private long updatedAt;
 
-    // Constructor dành cho Room
     public CommentEntity() {
     }
 
-    // Constructor sử dụng trong Java
-    @Ignore
     public CommentEntity(
             @NonNull String commentId,
             String userId,

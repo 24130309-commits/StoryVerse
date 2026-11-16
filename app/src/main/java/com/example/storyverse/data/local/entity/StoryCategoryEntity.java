@@ -2,32 +2,10 @@ package com.example.storyverse.data.local.entity;
 
 import androidx.annotation.NonNull;
 import androidx.room.Entity;
-import androidx.room.ForeignKey;
-import androidx.room.Index;
-import androidx.room.Ignore;
 
 @Entity(
         tableName = "story_categories",
-        primaryKeys = {"storyId", "categoryId"},
-
-        foreignKeys = {
-                @ForeignKey(
-                        entity = StoryEntity.class,
-                        parentColumns = "storyId",
-                        childColumns = "storyId",
-                        onDelete = ForeignKey.CASCADE
-                ),
-                @ForeignKey(
-                        entity = CategoryEntity.class,
-                        parentColumns = "categoryId",
-                        childColumns = "categoryId",
-                        onDelete = ForeignKey.CASCADE
-                )
-        },
-
-        indices = {
-                @Index("categoryId")
-        }
+        primaryKeys = {"storyId", "categoryId"}
 )
 public class StoryCategoryEntity {
 
@@ -40,7 +18,6 @@ public class StoryCategoryEntity {
     public StoryCategoryEntity() {
     }
 
-    @Ignore
     public StoryCategoryEntity(
             @NonNull String storyId,
             @NonNull String categoryId

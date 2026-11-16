@@ -1,6 +1,7 @@
 
 package com.example.storyverse.adapter;
 
+import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.view.LayoutInflater;
@@ -26,15 +27,22 @@ import java.util.concurrent.Executors;
 
 public class StoryAdapter extends RecyclerView.Adapter<StoryAdapter.StoryViewHolder> {
 
+    public static final int MODE_HORIZONTAL = 0;
+    public static final int MODE_VERTICAL = 1;
+
     private final List<StoryEntity> localStories = new ArrayList<>();
     private final List<Story> apiStories = new ArrayList<>();
 
-    private boolean isApiData = false;
-
-    private OnStoryClickListener listener;
-
     private final ExecutorService imageExecutor =
             Executors.newFixedThreadPool(3);
+
+    private boolean isApiData = false;
+    private boolean useHomeLayout = false;
+    private int displayMode = MODE_VERTICAL;
+
+    private OnStoryClickListener listener;
+    private OnLocalStoryClickListener localClickListener;
+    private OnApiStoryItemClickListener apiItemClickListener;
 
     public interface OnStoryClickListener {
         void onApiStoryClick(Story story);
@@ -42,15 +50,61 @@ public class StoryAdapter extends RecyclerView.Adapter<StoryAdapter.StoryViewHol
         void onLocalStoryClick(StoryEntity story);
     }
 
+    public interface OnLocalStoryClickListener {
+        void onStoryClick(StoryEntity story);
+    }
+
+    public interface OnApiStoryItemClickListener {
+        void onStoryClick(Story story);
+    }
+
     public StoryAdapter() {
     }
 
+    // Dùng cho Reader và Search, hỗ trợ cả truyện API lẫn truyện Room.
     public StoryAdapter(OnStoryClickListener listener) {
         this.listener = listener;
     }
 
+    // Dùng cho Home và Explore.
+    public StoryAdapter(
+            int displayMode,
+            OnLocalStoryClickListener listener
+    ) {
+        this.displayMode = displayMode;
+        this.localClickListener = listener;
+        this.useHomeLayout = true;
+    }
+
+    // Dùng cho luồng tìm kiếm cũ nhận danh sách Story.
+    public StoryAdapter(
+            Context context,
+            List<Story> filteredStories,
+            OnApiStoryItemClickListener listener
+    ) {
+        this.apiItemClickListener = listener;
+
+        if (filteredStories != null) {
+            apiStories.addAll(filteredStories);
+        }
+
+        isApiData = true;
+    }
+
     public void setOnStoryClickListener(OnStoryClickListener listener) {
         this.listener = listener;
+    }
+
+    public void setLocalStoryClickListener(
+            OnLocalStoryClickListener listener
+    ) {
+        this.localClickListener = listener;
+    }
+
+    public void setApiStoryItemClickListener(
+            OnApiStoryItemClickListener listener
+    ) {
+        this.apiItemClickListener = listener;
     }
 
     @NonNull
@@ -59,8 +113,18 @@ public class StoryAdapter extends RecyclerView.Adapter<StoryAdapter.StoryViewHol
             @NonNull ViewGroup parent,
             int viewType
     ) {
+        int layoutRes;
+
+        if (!useHomeLayout) {
+            layoutRes = R.layout.item_story;
+        } else if (displayMode == MODE_HORIZONTAL) {
+            layoutRes = R.layout.item_story_featured;
+        } else {
+            layoutRes = R.layout.item_story_vertical;
+        }
+
         View view = LayoutInflater.from(parent.getContext())
-                .inflate(R.layout.item_story, parent, false);
+                .inflate(layoutRes, parent, false);
 
         return new StoryViewHolder(view);
     }
@@ -71,106 +135,140 @@ public class StoryAdapter extends RecyclerView.Adapter<StoryAdapter.StoryViewHol
             int position
     ) {
         if (isApiData) {
+            if (position < 0 || position >= apiStories.size()) {
+                return;
+            }
+
             Story story = apiStories.get(position);
-
-            holder.tvTitle.setText(
-                    story.getTitle() != null
-                            ? story.getTitle()
-                            : "Chưa có tên truyện"
-            );
-
-            holder.tvAuthor.setText(
-                    "Tác giả: " + safeText(story.getAuthor(), "Chưa rõ")
-            );
-
-            holder.tvDescription.setText(
-                    safeText(story.getDescription(), "Chưa có mô tả")
-            );
-
-            holder.tvSource.setText(
-                    "Nguồn: " + safeText(story.getSource(), "Không rõ")
-            );
-
-            loadCover(holder.ivCover, story.getCoverUrl());
-
-            holder.itemView.setOnClickListener(v -> {
-                if (listener != null) {
-                    listener.onApiStoryClick(story);
-                }
-            });
-
+            bindApiStory(holder, story);
         } else {
+            if (position < 0 || position >= localStories.size()) {
+                return;
+            }
+
             StoryEntity story = localStories.get(position);
-
-            holder.tvTitle.setText(
-                    safeText(story.getTitle(), "Chưa có tên truyện")
-            );
-
-            holder.tvAuthor.setText(
-                    "Tác giả ID: " + safeText(story.getAuthorId(), "Chưa rõ")
-            );
-
-            holder.tvDescription.setText(
-                    safeText(story.getDescription(), "Chưa có mô tả")
-            );
-
-            holder.tvSource.setText(
-                    "Nguồn: " + safeText(story.getSource(), "Thư viện")
-            );
-
-            loadCover(holder.ivCover, story.getCoverUrl());
-
-            holder.itemView.setOnClickListener(v -> {
-                if (listener != null) {
-                    listener.onLocalStoryClick(story);
-                }
-            });
+            bindLocalStory(holder, story);
         }
     }
 
-    @Override
-    public int getItemCount() {
-        return isApiData ? apiStories.size() : localStories.size();
-    }
-
-    // Dữ liệu truyện lấy từ Room - giữ tương thích với code cũ.
-    public void setStories(List<StoryEntity> newStories) {
-        isApiData = false;
-
-        localStories.clear();
-
-        if (newStories != null) {
-            localStories.addAll(newStories);
+    private void bindApiStory(
+            StoryViewHolder holder,
+            Story story
+    ) {
+        if (story == null) {
+            return;
         }
 
-        notifyDataSetChanged();
-    }
+        loadCover(holder.ivCover, story.getCoverUrl());
 
-    // Dữ liệu truyện lấy từ Google Books và Open Library.
-    public void setApiStories(List<Story> newStories) {
-        isApiData = true;
+        if (useHomeLayout) {
+            setText(holder.tvTitle, story.getTitle());
 
-        apiStories.clear();
+            String category = story.getCategory();
+            if (category == null || category.trim().isEmpty()) {
+                category = getFirstCategory(story.getCategories());
+            }
 
-        if (newStories != null) {
-            apiStories.addAll(newStories);
+            setText(holder.tvGenre, category);
+            setText(holder.tvAuthor, story.getAuthor());
+            setText(holder.tvDescription, story.getDescription());
+            setText(holder.tvStats, "");
+        } else {
+            setText(holder.tvTitle, story.getTitle());
+            setText(holder.tvAuthor, story.getAuthor());
+            setText(holder.tvDescription, story.getDescription());
+            setText(holder.tvSource, story.getSource());
         }
 
-        notifyDataSetChanged();
+        holder.itemView.setContentDescription(story.getTitle());
+
+        // Giữ sự kiện click cho cả layout Search và Home.
+        holder.itemView.setOnClickListener(v -> {
+            int currentPosition = holder.getBindingAdapterPosition();
+
+            if (currentPosition == RecyclerView.NO_POSITION) {
+                return;
+            }
+
+            if (apiItemClickListener != null) {
+                apiItemClickListener.onStoryClick(story);
+            }
+
+            if (listener != null) {
+                listener.onApiStoryClick(story);
+            }
+        });
     }
 
-    private String safeText(String value, String fallback) {
-        if (value == null || value.trim().isEmpty()) {
-            return fallback;
+    private void bindLocalStory(
+            StoryViewHolder holder,
+            StoryEntity story
+    ) {
+        if (story == null) {
+            return;
         }
 
-        return value.trim();
+        loadCover(holder.ivCover, story.getCoverUrl());
+
+        if (useHomeLayout) {
+            setText(holder.tvTitle, story.getTitle());
+            setText(holder.tvGenre, story.getLanguage());
+            setText(holder.tvAuthor, story.getAuthorId());
+            setText(holder.tvDescription, story.getDescription());
+
+            String stats = story.getViewCount()
+                    + " lượt xem • "
+                    + story.getChapterCount()
+                    + " chương";
+
+            setText(holder.tvStats, stats);
+        } else {
+            setText(holder.tvTitle, story.getTitle());
+            setText(holder.tvAuthor, story.getAuthorId());
+            setText(holder.tvDescription, story.getDescription());
+            setText(holder.tvSource, story.getSource());
+        }
+
+        holder.itemView.setContentDescription(story.getTitle());
+
+        holder.itemView.setOnClickListener(v -> {
+            int currentPosition = holder.getBindingAdapterPosition();
+
+            if (currentPosition == RecyclerView.NO_POSITION) {
+                return;
+            }
+
+            if (localClickListener != null) {
+                localClickListener.onStoryClick(story);
+            }
+
+            if (listener != null) {
+                listener.onLocalStoryClick(story);
+            }
+        });
+    }
+
+    private String getFirstCategory(List<String> categories) {
+        if (categories == null || categories.isEmpty()) {
+            return "";
+        }
+
+        String category = categories.get(0);
+        return category == null ? "" : category;
+    }
+
+    private void setText(TextView textView, String value) {
+        if (textView != null) {
+            textView.setText(value == null ? "" : value);
+        }
     }
 
     private void loadCover(ImageView imageView, String imageUrl) {
+        if (imageView == null) {
+            return;
+        }
 
         imageView.setImageResource(R.drawable.ic_launcher_background);
-
         imageView.setTag(imageUrl);
 
         if (imageUrl == null || imageUrl.trim().isEmpty()) {
@@ -178,7 +276,6 @@ public class StoryAdapter extends RecyclerView.Adapter<StoryAdapter.StoryViewHol
         }
 
         imageExecutor.execute(() -> {
-
             Bitmap bitmap = null;
             HttpURLConnection connection = null;
 
@@ -191,30 +288,26 @@ public class StoryAdapter extends RecyclerView.Adapter<StoryAdapter.StoryViewHol
                 connection.setInstanceFollowRedirects(true);
                 connection.connect();
 
-                try (InputStream inputStream = connection.getInputStream()) {
-                    bitmap = BitmapFactory.decodeStream(inputStream);
+                if (connection.getResponseCode() == HttpURLConnection.HTTP_OK) {
+                    try (InputStream inputStream = connection.getInputStream()) {
+                        bitmap = BitmapFactory.decodeStream(inputStream);
+                    }
                 }
-
             } catch (Exception e) {
-                android.util.Log.e(
-                        "StoryAdapter",
-                        "Không thể tải ảnh bìa",
-                        e
-                );
-
+                bitmap = null;
             } finally {
                 if (connection != null) {
                     connection.disconnect();
                 }
             }
 
-            if (bitmap != null) {
-                Bitmap finalBitmap = bitmap;
+            Bitmap finalBitmap = bitmap;
 
+            if (finalBitmap != null) {
                 imageView.post(() -> {
-                    Object tag = imageView.getTag();
+                    Object currentTag = imageView.getTag();
 
-                    if (imageUrl.equals(tag)) {
+                    if (imageUrl.equals(currentTag)) {
                         imageView.setImageBitmap(finalBitmap);
                     }
                 });
@@ -222,22 +315,74 @@ public class StoryAdapter extends RecyclerView.Adapter<StoryAdapter.StoryViewHol
         });
     }
 
-    public static class StoryViewHolder extends RecyclerView.ViewHolder {
+    @Override
+    public int getItemCount() {
+        return isApiData ? apiStories.size() : localStories.size();
+    }
+
+    public void setStories(List<StoryEntity> stories) {
+        isApiData = false;
+
+        localStories.clear();
+
+        if (stories != null) {
+            localStories.addAll(stories);
+        }
+
+        notifyDataSetChanged();
+    }
+
+    public void setApiStories(List<Story> stories) {
+        isApiData = true;
+
+        apiStories.clear();
+
+        if (stories != null) {
+            apiStories.addAll(stories);
+        }
+
+        notifyDataSetChanged();
+    }
+
+    static class StoryViewHolder extends RecyclerView.ViewHolder {
 
         ImageView ivCover;
+
         TextView tvTitle;
         TextView tvAuthor;
         TextView tvDescription;
         TextView tvSource;
+        TextView tvGenre;
+        TextView tvStats;
 
-        public StoryViewHolder(@NonNull View itemView) {
+        StoryViewHolder(@NonNull View itemView) {
             super(itemView);
 
             ivCover = itemView.findViewById(R.id.iv_story_cover);
+            if (ivCover == null) {
+                ivCover = itemView.findViewById(R.id.imgStoryCover);
+            }
+
             tvTitle = itemView.findViewById(R.id.tv_story_title);
+            if (tvTitle == null) {
+                tvTitle = itemView.findViewById(R.id.tvStoryTitle);
+            }
+
             tvAuthor = itemView.findViewById(R.id.tv_story_author);
+            if (tvAuthor == null) {
+                tvAuthor = itemView.findViewById(R.id.tvStoryAuthor);
+            }
+
             tvDescription = itemView.findViewById(R.id.tv_story_description);
+            if (tvDescription == null) {
+                tvDescription = itemView.findViewById(R.id.tvStoryDesc);
+            }
+
             tvSource = itemView.findViewById(R.id.tv_story_source);
+
+            tvGenre = itemView.findViewById(R.id.tvStoryGenre);
+
+            tvStats = itemView.findViewById(R.id.tvStoryStats);
         }
     }
 }

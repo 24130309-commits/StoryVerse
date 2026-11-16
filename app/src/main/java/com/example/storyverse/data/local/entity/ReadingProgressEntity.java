@@ -1,16 +1,13 @@
-
 package com.example.storyverse.data.local.entity;
 
 import androidx.annotation.NonNull;
 import androidx.room.Entity;
-import androidx.room.Ignore;
-import androidx.room.Index;
 import androidx.room.PrimaryKey;
 
 @Entity(
         tableName = "reading_progress",
         indices = {
-                @Index(
+                @androidx.room.Index(
                         value = {"userId", "storyId"},
                         unique = true
                 )
@@ -31,12 +28,9 @@ public class ReadingProgressEntity {
 
     private long lastReadAt;
 
-    // Constructor dành cho Room
     public ReadingProgressEntity() {
     }
 
-    // Constructor sử dụng trong Java
-    @Ignore
     public ReadingProgressEntity(
             @NonNull String progressId,
             String userId,
