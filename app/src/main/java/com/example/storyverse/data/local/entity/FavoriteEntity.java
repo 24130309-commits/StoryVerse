@@ -3,15 +3,15 @@ package com.example.storyverse.data.local.entity;
 import androidx.annotation.NonNull;
 import androidx.room.Entity;
 import androidx.room.PrimaryKey;
-
-@Entity(
-        tableName = "favorites",
-        indices = {
-                        value = {"userId", "storyId"},
-                        unique = true
-                )
-        }
-)
+//
+//@Entity(
+//        tableName = "favorites",
+//        indices = {
+//                        value = {"userId", "storyId"},
+//                        unique = true
+//
+//        }
+//)
 public class FavoriteEntity {
 
     @PrimaryKey

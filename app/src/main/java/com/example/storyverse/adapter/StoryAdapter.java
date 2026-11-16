@@ -13,6 +13,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.bumptech.glide.Glide;
 import com.example.storyverse.R;
 import com.example.storyverse.data.local.entity.StoryEntity;
+import com.example.storyverse.data.model.Story;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -25,6 +26,9 @@ public class StoryAdapter extends RecyclerView.Adapter<StoryAdapter.StoryViewHol
     private final List<StoryEntity> stories = new ArrayList<>();
     private int displayMode = MODE_VERTICAL;
     private OnStoryClickListener listener;
+
+    public StoryAdapter(Context context, List<Story> filteredStories, Object o) {
+    }
 
     public interface OnStoryClickListener {
         void onStoryClick(StoryEntity story);

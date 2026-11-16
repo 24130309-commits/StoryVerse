@@ -3,6 +3,8 @@ package com.example.storyverse.data.model;
 import java.text.Normalizer;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
+import java.util.regex.Pattern;
 
 public class Story {
 
@@ -16,6 +18,7 @@ public class Story {
     private String source;
     private String sourceUrl;
     private String license;
+    private String category;
 
     public Story() {
     }
@@ -70,6 +73,7 @@ public class Story {
         this.sourceUrl = sourceUrl;
         this.license = license;
     }
+
 
     private String normalizeVietnamese(String value) {
         if (value == null) {
@@ -171,5 +175,74 @@ public class Story {
 
     public void setLicense(String license) {
         this.license = license;
+    }
+
+    public String getCategory() {
+        return category;
+    }
+
+    public void setCategory(String category) {
+        this.category = category;
+    }
+
+    /**
+     * Kiểm tra truyện có khớp với cả từ khóa tìm kiếm và thể loại đang chọn hay không.
+     */
+    public boolean matchesSearch(String query, String selectedCategory) {
+        return matchesCategory(selectedCategory) && matchesQuery(query);
+    }
+
+    /**
+     * Lọc theo thể loại từ ChipGroup (hỗ trợ cả trường hợp 1 truyện có nhiều thể loại cách nhau bởi dấu phẩy).
+     */
+    public boolean matchesCategory(String selectedCategory) {
+        if (selectedCategory == null || selectedCategory.trim().isEmpty()
+                || selectedCategory.equalsIgnoreCase("Tất cả")) {
+            return true;
+        }
+        if (category == null || category.trim().isEmpty()) {
+            return false;
+        }
+
+        String normalizedTarget = normalizeText(selectedCategory);
+        String[] categories = category.split(",");
+        for (String item : categories) {
+            if (normalizeText(item).equals(normalizedTarget)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Tìm kiếm từ khóa theo tên truyện hoặc tên tác giả (hỗ trợ gõ có dấu và không dấu).
+     */
+    public boolean matchesQuery(String query) {
+        if (query == null || query.trim().isEmpty()) {
+            return true;
+        }
+
+        String normalizedQuery = normalizeText(query);
+        String normalizedTitle = normalizeText(getTitle());
+        String normalizedAuthor = normalizeText(getAuthor());
+
+        return normalizedTitle.contains(normalizedQuery)
+                || normalizedAuthor.contains(normalizedQuery);
+    }
+
+    /**
+     * Chuẩn hóa chuỗi về chữ thường và loại bỏ dấu tiếng Việt để so khớp linh hoạt.
+     */
+    private static String normalizeText(String input) {
+        if (input == null) {
+            return "";
+        }
+        String trimmed = input.trim().toLowerCase(Locale.ROOT);
+        String temp = Normalizer.normalize(trimmed, Normalizer.Form.NFD);
+        Pattern pattern = Pattern.compile("\\p{InCombiningDiacriticalMarks}+");
+        return pattern.matcher(temp)
+                .replaceAll("")
+                .replace('đ', 'd')
+                .replace('Đ', 'D');
     }
 }
