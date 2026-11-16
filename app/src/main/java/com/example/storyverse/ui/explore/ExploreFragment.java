@@ -20,7 +20,6 @@ import com.example.storyverse.R;
 import com.example.storyverse.adapter.StoryAdapter;
 import com.example.storyverse.data.local.entity.StoryEntity;
 import com.example.storyverse.ui.search.SearchFragment;
-import com.example.storyverse.viewmodel.ExploreViewModel;
 import com.google.android.material.card.MaterialCardView;
 import com.google.android.material.chip.Chip;
 import com.google.android.material.chip.ChipGroup;
