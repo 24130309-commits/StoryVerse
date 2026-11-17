@@ -1,66 +1,129 @@
 package com.example.storyverse.ui.auth;
 
 import android.os.Bundle;
-
-import androidx.fragment.app.Fragment;
-
+import android.text.TextUtils;
+import android.util.Patterns;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Button;
+import android.widget.EditText;
+import android.widget.TextView;
+import android.widget.Toast;
+
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.fragment.app.Fragment;
+import androidx.navigation.Navigation;
 
 import com.example.storyverse.R;
+import com.example.storyverse.data.remote.firebase.FirebaseAuthManager;
+import com.google.firebase.auth.FirebaseAuthInvalidCredentialsException;
+import com.google.firebase.auth.FirebaseAuthInvalidUserException;
 
-/**
- * A simple {@link Fragment} subclass.
- * Use the {@link LoginFragment#newInstance} factory method to
- * create an instance of this fragment.
- */
 public class LoginFragment extends Fragment {
 
-    // TODO: Rename parameter arguments, choose names that match
-    // the fragment initialization parameters, e.g. ARG_ITEM_NUMBER
-    private static final String ARG_PARAM1 = "param1";
-    private static final String ARG_PARAM2 = "param2";
-
-    // TODO: Rename and change types of parameters
-    private String mParam1;
-    private String mParam2;
+    private EditText etEmail;
+    private EditText etPassword;
+    private Button btnLogin;
+    private TextView tvRegister;
+    private FirebaseAuthManager authManager;
 
     public LoginFragment() {
-        // Required empty public constructor
-    }
-
-    /**
-     * Use this factory method to create a new instance of
-     * this fragment using the provided parameters.
-     *
-     * @param param1 Parameter 1.
-     * @param param2 Parameter 2.
-     * @return A new instance of fragment LoginFragment.
-     */
-    // TODO: Rename and change types and number of parameters
-    public static LoginFragment newInstance(String param1, String param2) {
-        LoginFragment fragment = new LoginFragment();
-        Bundle args = new Bundle();
-        args.putString(ARG_PARAM1, param1);
-        args.putString(ARG_PARAM2, param2);
-        fragment.setArguments(args);
-        return fragment;
-    }
-
-    @Override
-    public void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        if (getArguments() != null) {
-            mParam1 = getArguments().getString(ARG_PARAM1);
-            mParam2 = getArguments().getString(ARG_PARAM2);
-        }
     }
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
-        // Inflate the layout for this fragment
         return inflater.inflate(R.layout.fragment_login, container, false);
+    }
+
+    @Override
+    public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
+
+        try {
+            authManager = new FirebaseAuthManager();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        etEmail = view.findViewById(R.id.etEmail);
+        etPassword = view.findViewById(R.id.etPassword);
+        btnLogin = view.findViewById(R.id.btnLogin);
+        tvRegister = view.findViewById(R.id.tvRegister);
+
+        if (btnLogin != null) {
+            btnLogin.setOnClickListener(v -> handleLogin());
+        }
+
+        if (tvRegister != null) {
+            tvRegister.setOnClickListener(v ->
+                    Navigation.findNavController(v).navigate(R.id.action_loginFragment_to_registerFragment)
+            );
+        }
+    }
+
+    private void handleLogin() {
+        String email = etEmail.getText().toString().trim();
+        String password = etPassword.getText().toString().trim();
+
+        if (TextUtils.isEmpty(email)) {
+            etEmail.setError("Vui lòng nhập Email!");
+            etEmail.requestFocus();
+            return;
+        }
+
+        if (!Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
+            etEmail.setError("Email không đúng định dạng!");
+            etEmail.requestFocus();
+            return;
+        }
+
+        if (TextUtils.isEmpty(password)) {
+            etPassword.setError("Vui lòng nhập Mật khẩu!");
+            etPassword.requestFocus();
+            return;
+        }
+
+        if (password.length() < 6) {
+            etPassword.setError("Mật khẩu phải có ít nhất 6 ký tự!");
+            etPassword.requestFocus();
+            return;
+        }
+
+        if (authManager == null) {
+            Toast.makeText(getContext(), "Lỗi kết nối Firebase!", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        btnLogin.setEnabled(false);
+        Toast.makeText(getContext(), "Đang xác thực...", Toast.LENGTH_SHORT).show();
+
+        authManager.login(email, password, task -> {
+            if (!isAdded()) return;
+            btnLogin.setEnabled(true);
+
+            if (task.isSuccessful()) {
+                Toast.makeText(getContext(), "Đăng nhập thành công!", Toast.LENGTH_SHORT).show();
+                if (getView() != null) {
+                    Navigation.findNavController(getView()).navigate(R.id.action_loginFragment_to_homeFragment2);
+                }
+            } else {
+                Exception e = task.getException();
+                if (e instanceof FirebaseAuthInvalidUserException) {
+                    etEmail.setError("Email này chưa được đăng ký!");
+                    etEmail.requestFocus();
+                    Toast.makeText(getContext(), "Tài khoản không tồn tại!", Toast.LENGTH_LONG).show();
+                } else if (e instanceof FirebaseAuthInvalidCredentialsException) {
+                    etPassword.setError("Sai email hoặc mật khẩu!");
+                    etPassword.requestFocus();
+                    Toast.makeText(getContext(), "Sai email hoặc mật khẩu!", Toast.LENGTH_LONG).show();
+                } else {
+                    String msg = (e != null) ? e.getMessage() : "Đăng nhập thất bại!";
+                    Toast.makeText(getContext(), "Đăng nhập thất bại: " + msg, Toast.LENGTH_LONG).show();
+                }
+            }
+        });
     }
 }

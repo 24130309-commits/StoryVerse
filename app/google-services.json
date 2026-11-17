@@ -1,13 +1,13 @@
 {
   "project_info": {
-    "project_number": "594035060322",
-    "project_id": "appstoryverse-c849b",
-    "storage_bucket": "appstoryverse-c849b.firebasestorage.app"
+    "project_number": "964786045324",
+    "project_id": "storyverse-9dbcf",
+    "storage_bucket": "storyverse-9dbcf.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:594035060322:android:5aef39786a13c18254ab3b",
+        "mobilesdk_app_id": "1:964786045324:android:6dd62d2404c673916816a9",
         "android_client_info": {
           "package_name": "com.example.storyverse"
         }
@@ -15,7 +15,7 @@
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyAIM_SxWQhGcwpZqpizQjAoef7rov1Md-M"
+          "current_key": "AIzaSyA3Y6DEZGT2hpzILI-nmyTl8TYwdWiDDfk"
         }
       ],
       "services": {
