@@ -1,14 +1,17 @@
+
 package com.example.storyverse.data.local.entity;
 
 import androidx.annotation.NonNull;
 import androidx.room.Entity;
+import androidx.room.Ignore;
+import androidx.room.Index;
 import androidx.room.PrimaryKey;
 
 @Entity(
         tableName = "notifications",
         indices = {
-                @androidx.room.Index(value = {"userId"}),
-                @androidx.room.Index(value = {"createdAt"})
+                @Index(value = {"userId"}),
+                @Index(value = {"createdAt"})
         }
 )
 public class NotificationEntity {
@@ -30,9 +33,12 @@ public class NotificationEntity {
 
     private long createdAt;
 
+    // Constructor dành cho Room
     public NotificationEntity() {
     }
 
+    // Constructor sử dụng trong Java
+    @Ignore
     public NotificationEntity(
             @NonNull String notificationId,
             String userId,

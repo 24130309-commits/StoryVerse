@@ -1,7 +1,9 @@
+
 package com.example.storyverse.data.local.entity;
 
 import androidx.annotation.NonNull;
 import androidx.room.Entity;
+import androidx.room.Ignore;
 import androidx.room.PrimaryKey;
 
 @Entity(tableName = "categories")
@@ -15,9 +17,12 @@ public class CategoryEntity {
     private String description;
     private String iconUrl;
 
+    // Constructor dành cho Room
     public CategoryEntity() {
     }
 
+    // Constructor sử dụng trong Java
+    @Ignore
     public CategoryEntity(
             @NonNull String categoryId,
             String name,

@@ -1,13 +1,16 @@
+
 package com.example.storyverse.data.local.entity;
 
 import androidx.annotation.NonNull;
 import androidx.room.Entity;
+import androidx.room.Ignore;
+import androidx.room.Index;
 import androidx.room.PrimaryKey;
 
 @Entity(
         tableName = "favorites",
         indices = {
-                @androidx.room.Index(
+                @Index(
                         value = {"userId", "storyId"},
                         unique = true
                 )
@@ -23,9 +26,12 @@ public class FavoriteEntity {
     private String storyId;
     private long createdAt;
 
+    // Constructor dành cho Room
     public FavoriteEntity() {
     }
 
+    // Constructor sử dụng trong Java
+    @Ignore
     public FavoriteEntity(
             @NonNull String favoriteId,
             String userId,

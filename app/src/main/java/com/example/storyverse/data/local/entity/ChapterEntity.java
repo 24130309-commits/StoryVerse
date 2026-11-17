@@ -2,9 +2,16 @@ package com.example.storyverse.data.local.entity;
 
 import androidx.annotation.NonNull;
 import androidx.room.Entity;
+import androidx.room.Ignore;
+import androidx.room.Index;
 import androidx.room.PrimaryKey;
 
-@Entity(tableName = "chapters")
+@Entity(
+        tableName = "chapters",
+        indices = {
+                @Index(value = {"storyId", "chapterNumber"})
+        }
+)
 public class ChapterEntity {
 
     @PrimaryKey
@@ -15,6 +22,10 @@ public class ChapterEntity {
     private int chapterNumber;
     private String title;
     private String content;
+
+    // Đường dẫn Firebase Storage nếu nội dung chương quá lớn
+    private String contentStoragePath;
+
     private int wordCount;
 
     private long publishedAt;
@@ -24,6 +35,8 @@ public class ChapterEntity {
     public ChapterEntity() {
     }
 
+    // Giữ constructor cũ để tương thích Reader và ChapterRepository
+    @Ignore
     public ChapterEntity(
             @NonNull String chapterId,
             String storyId,
@@ -85,6 +98,14 @@ public class ChapterEntity {
 
     public void setContent(String content) {
         this.content = content;
+    }
+
+    public String getContentStoragePath() {
+        return contentStoragePath;
+    }
+
+    public void setContentStoragePath(String contentStoragePath) {
+        this.contentStoragePath = contentStoragePath;
     }
 
     public int getWordCount() {

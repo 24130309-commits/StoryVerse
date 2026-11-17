@@ -1,14 +1,186 @@
 <?xml version="1.0" encoding="utf-8"?>
-<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="#FBF8F1"
     tools:context=".ui.reader.ReaderFragment">
 
-    <!-- TODO: Update blank fragment layout -->
-    <TextView
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:text="@string/hello_blank_fragment" />
+    <!-- =========================
+         Reader Header
+         ========================= -->
 
-</FrameLayout>
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="56dp"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:paddingStart="12dp"
+        android:paddingEnd="12dp"
+        android:background="#FFFFFF">
+
+        <ImageButton
+            android:id="@+id/btn_back"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="Quay lại"
+            android:src="@android:drawable/ic_menu_revert" />
+
+        <TextView
+            android:id="@+id/tv_reader_title"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_marginStart="8dp"
+            android:ellipsize="end"
+            android:maxLines="1"
+            android:text="Đang đọc truyện"
+            android:textColor="#181824"
+            android:textSize="18sp"
+            android:textStyle="bold" />
+
+        <!-- Nút danh sách chương -->
+        <ImageButton
+            android:id="@+id/btn_chapter_list"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="Danh sách chương"
+            android:src="@android:drawable/ic_menu_sort_by_size" />
+
+        <!-- Nút cài đặt đọc -->
+        <ImageButton
+            android:id="@+id/btn_reader_settings"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="Cài đặt đọc"
+            android:src="@android:drawable/ic_menu_manage" />
+
+    </LinearLayout>
+
+    <!-- =========================
+         Reading Progress
+         ========================= -->
+
+    <ProgressBar
+        android:id="@+id/progress_reading"
+        style="?android:attr/progressBarStyleHorizontal"
+        android:layout_width="match_parent"
+        android:layout_height="3dp"
+        android:max="100"
+        android:progress="0"
+        android:progressTint="#6D5DFB" />
+
+    <!-- =========================
+         Chapter Content
+         ========================= -->
+
+    <ScrollView
+        android:id="@+id/scroll_reader"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:fillViewport="true"
+        android:clipToPadding="false"
+        android:paddingStart="20dp"
+        android:paddingTop="24dp"
+        android:paddingEnd="20dp"
+        android:paddingBottom="24dp">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/tv_chapter_number"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="CHƯƠNG 1"
+                android:textColor="#6D5DFB"
+                android:textSize="14sp"
+                android:textStyle="bold"
+                android:letterSpacing="0.08" />
+
+            <TextView
+                android:id="@+id/tv_chapter_title"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:text="Tên chương"
+                android:textColor="#181824"
+                android:textSize="24sp"
+                android:textStyle="bold" />
+
+            <View
+                android:layout_width="48dp"
+                android:layout_height="3dp"
+                android:layout_marginTop="16dp"
+                android:layout_marginBottom="24dp"
+                android:background="#6D5DFB" />
+
+            <TextView
+                android:id="@+id/tv_chapter_content"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:lineSpacingExtra="8dp"
+                android:text="Nội dung chương truyện sẽ được hiển thị ở đây."
+                android:textColor="#302E32"
+                android:textSize="16sp"
+                android:fontFamily="sans"
+                android:textIsSelectable="true" />
+
+        </LinearLayout>
+
+    </ScrollView>
+
+    <!-- =========================
+         Bottom Navigation
+         ========================= -->
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="64dp"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:paddingStart="12dp"
+        android:paddingEnd="12dp"
+        android:background="#FFFFFF">
+
+        <Button
+            android:id="@+id/btn_previous_chapter"
+            android:layout_width="0dp"
+            android:layout_height="48dp"
+            android:layout_weight="1"
+            android:text="‹  Chương trước"
+            android:textAllCaps="false"
+            android:textColor="#6D5DFB"
+            android:textSize="14sp" />
+
+        <TextView
+            android:id="@+id/tv_chapter_progress"
+            android:layout_width="70dp"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:text="1 / 10"
+            android:textColor="#77758A"
+            android:textSize="13sp" />
+
+        <Button
+            android:id="@+id/btn_next_chapter"
+            android:layout_width="0dp"
+            android:layout_height="48dp"
+            android:layout_weight="1"
+            android:text="Chương sau  ›"
+            android:textAllCaps="false"
+            android:textColor="#FFFFFF"
+            android:textSize="14sp"
+            android:backgroundTint="#6D5DFB" />
+
+    </LinearLayout>
+
+</LinearLayout>

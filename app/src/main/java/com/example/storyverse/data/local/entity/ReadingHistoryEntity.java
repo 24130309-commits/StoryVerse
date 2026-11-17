@@ -1,15 +1,18 @@
+
 package com.example.storyverse.data.local.entity;
 
 import androidx.annotation.NonNull;
 import androidx.room.Entity;
+import androidx.room.Ignore;
+import androidx.room.Index;
 import androidx.room.PrimaryKey;
 
 @Entity(
         tableName = "reading_history",
         indices = {
-                @androidx.room.Index(value = {"userId"}),
-                @androidx.room.Index(value = {"storyId"}),
-                @androidx.room.Index(value = {"readAt"})
+                @Index(value = {"userId"}),
+                @Index(value = {"storyId"}),
+                @Index(value = {"readAt"})
         }
 )
 public class ReadingHistoryEntity {
@@ -24,9 +27,12 @@ public class ReadingHistoryEntity {
 
     private long readAt;
 
+    // Constructor dành cho Room
     public ReadingHistoryEntity() {
     }
 
+    // Constructor sử dụng trong Java
+    @Ignore
     public ReadingHistoryEntity(
             @NonNull String historyId,
             String userId,
