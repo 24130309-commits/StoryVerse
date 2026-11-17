@@ -150,7 +150,6 @@ public class StoryFirestoreDataSource {
         List<StoryCategoryEntity> safeRelations =
                 relations != null ? relations : new ArrayList<>();
 
-        // Chỉ truy vấn quan hệ cũ khi có danh sách thể loại mới.
         if (!safeCategories.isEmpty()) {
 
             firestoreManager.getCollection(COLLECTION_STORY_CATEGORIES)
@@ -173,8 +172,6 @@ public class StoryFirestoreDataSource {
 
         } else {
 
-            // Không có thể loại mới:
-            // Giữ nguyên categoryIds và quan hệ cũ trên Firestore.
             executeSaveTransaction(
                     story,
                     author,
@@ -223,8 +220,6 @@ public class StoryFirestoreDataSource {
                     putIfNotEmpty(storyData, "license", story.getLicense());
                     putIfNotEmpty(storyData, "ageRating", story.getAgeRating());
 
-                    // Chỉ thiết lập mặc định cho truyện mới.
-                    // Không ghi đè trạng thái và số liệu truyện cũ.
                     if (!existingStory.exists()) {
 
                         storyData.put("status", "pending");
@@ -254,7 +249,6 @@ public class StoryFirestoreDataSource {
                         );
                     }
 
-                    // Tạo danh sách categoryIds không trùng.
                     Set<String> newCategoryIds = new LinkedHashSet<>();
 
                     for (CategoryEntity category : categories) {
@@ -285,9 +279,7 @@ public class StoryFirestoreDataSource {
                             SetOptions.merge()
                     );
 
-                    // ---------------------------------
                     // LƯU AUTHOR
-                    // ---------------------------------
 
                     if (author != null
                             && isValidId(author.getAuthorId())) {
@@ -311,9 +303,7 @@ public class StoryFirestoreDataSource {
                         );
                     }
 
-                    // ---------------------------------
                     // LƯU CATEGORY
-                    // ---------------------------------
 
                     for (CategoryEntity category : categories) {
 
@@ -354,9 +344,7 @@ public class StoryFirestoreDataSource {
                         );
                     }
 
-                    // ---------------------------------
                     // CHUẨN HÓA QUAN HỆ STORY - CATEGORY
-                    // ---------------------------------
 
                     Map<String, StoryCategoryEntity> expectedRelations =
                             new LinkedHashMap<>();
@@ -391,7 +379,6 @@ public class StoryFirestoreDataSource {
                         expectedRelations.put(relationId, relation);
                     }
 
-                    // Xóa quan hệ cũ không còn trong danh sách mới.
                     if (oldRelations != null) {
 
                         for (DocumentSnapshot oldRelation
@@ -406,7 +393,6 @@ public class StoryFirestoreDataSource {
                         }
                     }
 
-                    // Lưu quan hệ mới.
                     for (Map.Entry<String, StoryCategoryEntity> entry
                             : expectedRelations.entrySet()) {
 
@@ -504,8 +490,8 @@ public class StoryFirestoreDataSource {
     }
 
     // =========================================
-    // LẤY TẤT CẢ TRUYỆN VÀ DỮ LIỆU LIÊN QUAN
-    // BAO GỒM PENDING, PUBLISHED, REJECTED...
+    // LẤY TRUYỆN ĐÃ XUẤT BẢN VÀ DỮ LIỆU LIÊN QUAN
+    // DÀNH CHO NGƯỜI ĐỌC
     // =========================================
 
     public void getAllStoriesWithRelations(SyncCallback callback) {
@@ -516,12 +502,11 @@ public class StoryFirestoreDataSource {
 
         try {
 
-            // Không lọc status.
-            // Không dùng orderBy(createdAt) để tránh bỏ sót
-            // tài liệu cũ chưa có trường createdAt.
+            // Chỉ lấy truyện đã xuất bản để phù hợp Firestore Rules.
 
             com.google.android.gms.tasks.Task<QuerySnapshot> storiesTask =
                     firestoreManager.getCollection(COLLECTION_STORIES)
+                            .whereEqualTo("status", "published")
                             .get();
 
             com.google.android.gms.tasks.Task<QuerySnapshot> authorsTask =
@@ -572,9 +557,7 @@ public class StoryFirestoreDataSource {
                     Set<String> authorIds = new LinkedHashSet<>();
                     Set<String> categoryIds = new LinkedHashSet<>();
 
-                    // ---------------------------------
-                    // 1. LẤY TẤT CẢ TRUYỆN
-                    // ---------------------------------
+                    // 1. LẤY TRUYỆN ĐÃ XUẤT BẢN
 
                     for (DocumentSnapshot document : storySnapshot.getDocuments()) {
 
@@ -594,7 +577,6 @@ public class StoryFirestoreDataSource {
                             authorIds.add(story.getAuthorId());
                         }
 
-                        // Lấy categoryIds từ tài liệu truyện.
                         Object rawCategoryIds = document.get("categoryIds");
 
                         if (rawCategoryIds instanceof List<?>) {
@@ -622,9 +604,7 @@ public class StoryFirestoreDataSource {
                         }
                     }
 
-                    // ---------------------------------
                     // 2. LẤY QUAN HỆ STORY - CATEGORY
-                    // ---------------------------------
 
                     for (DocumentSnapshot document : relationSnapshot.getDocuments()) {
 
@@ -646,9 +626,7 @@ public class StoryFirestoreDataSource {
                         );
                     }
 
-                    // ---------------------------------
                     // 3. LẤY TÁC GIẢ
-                    // ---------------------------------
 
                     for (DocumentSnapshot document : authorSnapshot.getDocuments()) {
 
@@ -668,10 +646,6 @@ public class StoryFirestoreDataSource {
                         authorMap.put(authorId, author);
                     }
 
-                    // Bổ sung tác giả bị thiếu.
-                    // Các trường còn lại để null nhằm tránh ghi đè
-                    // thông tin hiện có trong Room.
-
                     for (String authorId : authorIds) {
 
                         if (!authorMap.containsKey(authorId)) {
@@ -685,9 +659,7 @@ public class StoryFirestoreDataSource {
                         }
                     }
 
-                    // ---------------------------------
                     // 4. LẤY THỂ LOẠI
-                    // ---------------------------------
 
                     for (DocumentSnapshot document : categorySnapshot.getDocuments()) {
 
@@ -707,10 +679,6 @@ public class StoryFirestoreDataSource {
                         categoryMap.put(categoryId, category);
                     }
 
-                    // Bổ sung thể loại bị thiếu.
-                    // Các trường còn lại để null nhằm tránh ghi đè
-                    // thông tin hiện có trong Room.
-
                     for (String categoryId : categoryIds) {
 
                         if (!categoryMap.containsKey(categoryId)) {
@@ -724,9 +692,7 @@ public class StoryFirestoreDataSource {
                         }
                     }
 
-                    // ---------------------------------
                     // 5. TRẢ KẾT QUẢ ĐỒNG BỘ
-                    // ---------------------------------
 
                     callback.onSuccess(
                             new FirestoreSyncData(
@@ -752,12 +718,6 @@ public class StoryFirestoreDataSource {
 
     // =========================================
     // TƯƠNG THÍCH VỚI REPOSITORY CŨ
-    //
-    // Tên phương thức cũ được giữ lại để không
-    // làm hỏng các nơi đang gọi phương thức này.
-    //
-    // Lưu ý: Hiện tại phương thức này đồng bộ
-    // TẤT CẢ trạng thái, không chỉ published.
     // =========================================
 
     public void getPublishedStoriesWithRelations(SyncCallback callback) {

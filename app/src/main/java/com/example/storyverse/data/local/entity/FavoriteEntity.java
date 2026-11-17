@@ -1,17 +1,21 @@
+
 package com.example.storyverse.data.local.entity;
 
 import androidx.annotation.NonNull;
 import androidx.room.Entity;
+import androidx.room.Ignore;
+import androidx.room.Index;
 import androidx.room.PrimaryKey;
-//
-//@Entity(
-//        tableName = "favorites",
-//        indices = {
-//                        value = {"userId", "storyId"},
-//                        unique = true
-//
-//        }
-//)
+
+@Entity(
+        tableName = "favorites",
+        indices = {
+                @Index(
+                        value = {"userId", "storyId"},
+                        unique = true
+                )
+        }
+)
 public class FavoriteEntity {
 
     @PrimaryKey
@@ -25,6 +29,7 @@ public class FavoriteEntity {
     public FavoriteEntity() {
     }
 
+    @Ignore
     public FavoriteEntity(
             @NonNull String favoriteId,
             String userId,

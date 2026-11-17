@@ -1,3 +1,4 @@
+
 package com.example.storyverse.data.repository;
 
 import com.example.storyverse.BuildConfig;
@@ -27,7 +28,6 @@ public class GoogleBooksRepository {
     }
 
     public GoogleBooksRepository() {
-
         apiService = RetrofitClient.createService(
                 BASE_URL,
                 GoogleBooksService.class
@@ -39,7 +39,6 @@ public class GoogleBooksRepository {
             String keyword,
             BooksCallback callback
     ) {
-
         searchBooks(
                 keyword,
                 1,
@@ -55,26 +54,21 @@ public class GoogleBooksRepository {
             int pageSize,
             BooksCallback callback
     ) {
-
         if (callback == null) {
             return;
         }
 
         if (keyword == null || keyword.trim().isEmpty()) {
-
             callback.onError(
                     "Từ khóa tìm kiếm không được để trống"
             );
-
             return;
         }
 
         if (page < 1) {
-
             callback.onError(
                     "Số trang phải lớn hơn hoặc bằng 1"
             );
-
             return;
         }
 
@@ -100,14 +94,12 @@ public class GoogleBooksRepository {
                     Call<GoogleBooksResponse> call,
                     Response<GoogleBooksResponse> response
             ) {
-
                 if (response.isSuccessful()
                         && response.body() != null) {
 
                     callback.onSuccess(response.body());
 
                 } else {
-
                     callback.onError(
                             "Google Books trả về lỗi HTTP: "
                                     + response.code()
@@ -120,7 +112,6 @@ public class GoogleBooksRepository {
                     Call<GoogleBooksResponse> call,
                     Throwable throwable
             ) {
-
                 callback.onError(
                         throwable.getMessage() != null
                                 ? throwable.getMessage()

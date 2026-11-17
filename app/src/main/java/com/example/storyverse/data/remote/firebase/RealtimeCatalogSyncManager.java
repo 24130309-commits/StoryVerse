@@ -23,17 +23,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.RejectedExecutionException;
 
-/**
- * Lắng nghe dữ liệu Cloud Firestore và cập nhật Room.
- *
- * Đồng bộ:
- * - Authors
- * - Categories
- * - Stories: tất cả trạng thái
- * - Story_categories: chỉ các quan hệ hợp lệ
- *
- * Không tự động xóa dữ liệu Room khi document bị xóa trên Firestore.
- */
 public class RealtimeCatalogSyncManager {
 
     private static final String TAG = "RealtimeCatalogSync";
@@ -81,7 +70,6 @@ public class RealtimeCatalogSyncManager {
             return;
         }
 
-        // Tạo lại Executor nếu đã shutdown trước đó.
         if (databaseExecutor == null
                 || databaseExecutor.isShutdown()
                 || databaseExecutor.isTerminated()) {
@@ -128,9 +116,7 @@ public class RealtimeCatalogSyncManager {
 
                         AuthorEntity item = new AuthorEntity();
 
-                        // Document ID là ID chuẩn.
                         item.setAuthorId(authorId);
-
                         item.setName(doc.getString("name"));
                         item.setAvatarUrl(doc.getString("avatarUrl"));
                         item.setBio(doc.getString("bio"));
@@ -183,9 +169,7 @@ public class RealtimeCatalogSyncManager {
 
                         CategoryEntity item = new CategoryEntity();
 
-                        // Document ID là ID chuẩn.
                         item.setCategoryId(categoryId);
-
                         item.setName(doc.getString("name"));
                         item.setDescription(doc.getString("description"));
                         item.setIconUrl(doc.getString("iconUrl"));
@@ -209,11 +193,11 @@ public class RealtimeCatalogSyncManager {
         // -------------------------------------
         // 3. STORIES
         // -------------------------------------
-        // Lắng nghe tất cả trạng thái.
-        // Việc lọc published được thực hiện ở DAO/Repository
-        // phục vụ màn hình hiển thị truyện.
+        // Chỉ lắng nghe truyện đã xuất bản.
+        // Phù hợp với quyền đọc của người dùng thông thường.
 
         storiesListener = firestore.collection("stories")
+                .whereEqualTo("status", "published")
                 .addSnapshotListener((snapshot, error) -> {
 
                     if (!isCurrentGeneration(generation)) {
@@ -361,7 +345,6 @@ public class RealtimeCatalogSyncManager {
                 return;
             }
 
-            // Chờ đủ 4 snapshot đầu tiên.
             if (!authorsLoaded
                     || !categoriesLoaded
                     || !storiesLoaded
@@ -385,9 +368,7 @@ public class RealtimeCatalogSyncManager {
 
                 try {
 
-                    // ---------------------------------
                     // 1. TẬP HỢP ID TRUYỆN HỢP LỆ
-                    // ---------------------------------
 
                     Set<String> validStoryIds = new HashSet<>();
 
@@ -400,9 +381,7 @@ public class RealtimeCatalogSyncManager {
                         }
                     }
 
-                    // ---------------------------------
                     // 2. TẬP HỢP ID THỂ LOẠI HỢP LỆ
-                    // ---------------------------------
 
                     Set<String> validCategoryIds = new HashSet<>();
 
@@ -417,9 +396,7 @@ public class RealtimeCatalogSyncManager {
                         }
                     }
 
-                    // ---------------------------------
                     // 3. KIỂM TRA QUAN HỆ
-                    // ---------------------------------
 
                     List<StoryCategoryEntity> validRelations =
                             new ArrayList<>();
@@ -461,7 +438,6 @@ public class RealtimeCatalogSyncManager {
                             continue;
                         }
 
-                        // Tránh chèn quan hệ trùng lặp.
                         String relationKey = storyId + "::" + categoryId;
 
                         if (uniqueRelations.add(relationKey)) {
@@ -469,21 +445,13 @@ public class RealtimeCatalogSyncManager {
                         }
                     }
 
-                    // ---------------------------------
                     // 4. KIỂM TRA PHIÊN TRƯỚC KHI GHI
-                    // ---------------------------------
 
                     if (!isCurrentGeneration(generation)) {
                         return;
                     }
 
-                    // ---------------------------------
                     // 5. GHI ROOM THEO THỨ TỰ
-                    // ---------------------------------
-                    // Author, Category, Story trước.
-                    // StoryCategory sau.
-                    //
-                    // Tất cả nằm trong một transaction.
 
                     database.runInTransaction(() -> {
 
@@ -553,7 +521,6 @@ public class RealtimeCatalogSyncManager {
 
         StoryEntity item = new StoryEntity();
 
-        // Document ID là ID chuẩn của truyện.
         item.setStoryId(storyId);
 
         item.setTitle(doc.getString("title"));
@@ -656,7 +623,6 @@ public class RealtimeCatalogSyncManager {
 
     public synchronized void stop() {
 
-        // Vô hiệu hóa các callback và tác vụ thuộc phiên cũ.
         started = false;
         syncGeneration++;
 

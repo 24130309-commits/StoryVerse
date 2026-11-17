@@ -1,52 +1,197 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#FAFAFA"
     android:orientation="vertical"
-    android:padding="16dp"
-    tools:context=".ui.library.LibraryFragment">
+    android:background="#FAF9FF"
+    android:paddingStart="16dp"
+    android:paddingEnd="16dp"
+    android:paddingTop="20dp">
 
     <TextView
+        android:id="@+id/tvLibraryTitle"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="Thư viện của tôi"
-        android:textColor="#1A1A1A"
-        android:textSize="22sp"
+        android:textColor="#211B36"
+        android:textSize="25sp"
         android:textStyle="bold" />
+
+    <TextView
+        android:id="@+id/tvLibrarySubtitle"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="5dp"
+        android:text="Quản lý và tiếp tục hành trình đọc truyện"
+        android:textColor="#777184"
+        android:textSize="13sp" />
 
     <TextView
         android:id="@+id/tvLibraryCount"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="4dp"
-        android:layout_marginBottom="12dp"
-        android:text="0 truyện đã lưu"
-        android:textColor="#666666"
-        android:textSize="14sp" />
+        android:layout_marginTop="18dp"
+        android:text="0 truyện"
+        android:textColor="#5B4BDB"
+        android:textSize="14sp"
+        android:textStyle="bold" />
+
+    <LinearLayout
+        android:id="@+id/layoutLibraryTabs"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="14dp"
+        android:orientation="horizontal"
+        android:gravity="center"
+        android:background="#F0EEFA"
+        android:padding="4dp">
+
+        <Button
+            android:id="@+id/btnTabFavorites"
+            android:layout_width="0dp"
+            android:layout_height="44dp"
+            android:layout_weight="1"
+            android:minWidth="0dp"
+            android:minHeight="44dp"
+            android:paddingStart="4dp"
+            android:paddingEnd="4dp"
+            android:text="Yêu thích"
+            android:textAllCaps="false"
+            android:textSize="12sp"
+            android:textStyle="bold"
+            android:backgroundTint="#5B4BDB"
+            android:textColor="#FFFFFF" />
+
+        <Button
+            android:id="@+id/btnTabReading"
+            android:layout_width="0dp"
+            android:layout_height="44dp"
+            android:layout_weight="1"
+            android:minWidth="0dp"
+            android:minHeight="44dp"
+            android:paddingStart="4dp"
+            android:paddingEnd="4dp"
+            android:text="Đang đọc"
+            android:textAllCaps="false"
+            android:textSize="12sp"
+            android:backgroundTint="#F0EEFA"
+            android:textColor="#625D70" />
+
+        <Button
+            android:id="@+id/btnTabHistory"
+            android:layout_width="0dp"
+            android:layout_height="44dp"
+            android:layout_weight="1"
+            android:minWidth="0dp"
+            android:minHeight="44dp"
+            android:paddingStart="4dp"
+            android:paddingEnd="4dp"
+            android:text="Lịch sử"
+            android:textAllCaps="false"
+            android:textSize="12sp"
+            android:backgroundTint="#F0EEFA"
+            android:textColor="#625D70" />
+
+    </LinearLayout>
 
     <FrameLayout
         android:layout_width="match_parent"
-        android:layout_height="match_parent">
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:layout_marginTop="16dp">
 
-        <androidx.recyclerview.widget.RecyclerView
-            android:id="@+id/rvLibrary"
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:clipToPadding="false" />
+            android:orientation="vertical">
 
-        <TextView
-            android:id="@+id/tvEmptyLibrary"
+            <ProgressBar
+                android:id="@+id/progressLibrary"
+                style="?android:attr/progressBarStyleHorizontal"
+                android:layout_width="match_parent"
+                android:layout_height="3dp"
+                android:indeterminate="true"
+                android:visibility="gone" />
+
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/rvLibrary"
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_weight="1"
+                android:clipToPadding="false"
+                android:paddingTop="4dp"
+                android:paddingBottom="16dp"
+                android:scrollbars="vertical" />
+
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/layoutLibraryEmpty"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_gravity="center"
+            android:layout_height="match_parent"
             android:gravity="center"
+            android:orientation="vertical"
             android:padding="24dp"
-            android:text="Thư viện trống.\nHãy nhấn biểu tượng yêu thích ở trang chi tiết truyện để lưu vào đây!"
-            android:textColor="#888888"
-            android:textSize="15sp"
-            android:visibility="gone" />
+            android:visibility="gone">
+
+            <ImageView
+                android:layout_width="76dp"
+                android:layout_height="76dp"
+                android:src="@android:drawable/ic_menu_agenda"
+                android:contentDescription="Thư viện trống"
+                android:alpha="0.55" />
+
+            <TextView
+                android:id="@+id/tvEmptyLibraryTitle"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:gravity="center"
+                android:text="Chưa có truyện nào"
+                android:textColor="#302A43"
+                android:textSize="17sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/tvEmptyLibrary"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:gravity="center"
+                android:text="Những truyện bạn lưu sẽ xuất hiện ở đây."
+                android:textColor="#827D8D"
+                android:textSize="13sp" />
+
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/layoutLibraryError"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:gravity="center"
+            android:orientation="vertical"
+            android:padding="24dp"
+            android:visibility="gone">
+
+            <TextView
+                android:id="@+id/tvLibraryError"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center"
+                android:text="Không thể tải dữ liệu thư viện."
+                android:textColor="#C0392B"
+                android:textSize="14sp" />
+
+            <Button
+                android:id="@+id/btnRetryLibrary"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:text="Thử lại"
+                android:textAllCaps="false" />
+
+        </LinearLayout>
+
     </FrameLayout>
 
 </LinearLayout>

@@ -1,7 +1,9 @@
+
 package com.example.storyverse.data.local.entity;
 
 import androidx.annotation.NonNull;
 import androidx.room.Entity;
+import androidx.room.Ignore;
 import androidx.room.PrimaryKey;
 
 @Entity(
@@ -27,6 +29,7 @@ public class ReadingHistoryEntity {
     public ReadingHistoryEntity() {
     }
 
+    @Ignore
     public ReadingHistoryEntity(
             @NonNull String historyId,
             String userId,

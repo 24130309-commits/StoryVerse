@@ -1,3 +1,4 @@
+
 package com.example.storyverse.data.repository;
 
 import android.content.Context;
@@ -27,17 +28,11 @@ public class FavoriteRepository {
         return favoriteDao.getFavoritesByUserId(userId);
     }
 
-    public FavoriteEntity getFavorite(
-            String userId,
-            String storyId
-    ) {
+    public FavoriteEntity getFavorite(String userId, String storyId) {
         return favoriteDao.getFavorite(userId, storyId);
     }
 
-    public boolean isFavorite(
-            String userId,
-            String storyId
-    ) {
+    public boolean isFavorite(String userId, String storyId) {
         return favoriteDao.isFavorite(userId, storyId);
     }
 
@@ -45,13 +40,29 @@ public class FavoriteRepository {
         favoriteDao.deleteFavorite(favorite);
     }
 
-    public void deleteFavorite(
-            String userId,
-            String storyId
-    ) {
+    public void deleteFavorite(String userId, String storyId) {
+        favoriteDao.deleteFavoriteByUserAndStory(userId, storyId);
     }
 
     public void deleteAllFavoritesByUserId(String userId) {
         favoriteDao.deleteAllFavoritesByUserId(userId);
+    }
+
+    public void migrateGuestFavorites(
+            String oldUserId,
+            String newUserId
+    ) {
+        if (oldUserId == null
+                || newUserId == null
+                || oldUserId.trim().isEmpty()
+                || newUserId.trim().isEmpty()
+                || oldUserId.equals(newUserId)) {
+            return;
+        }
+
+        favoriteDao.migrateGuestFavorites(
+                oldUserId,
+                newUserId
+        );
     }
 }

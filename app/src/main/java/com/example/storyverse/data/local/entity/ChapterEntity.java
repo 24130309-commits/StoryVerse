@@ -3,6 +3,7 @@ package com.example.storyverse.data.local.entity;
 
 import androidx.annotation.NonNull;
 import androidx.room.Entity;
+import androidx.room.Ignore;
 import androidx.room.PrimaryKey;
 
 @Entity(
@@ -29,12 +30,12 @@ public class ChapterEntity {
     private long createdAt;
     private long updatedAt;
 
-    // Cột hỗ trợ lưu đường dẫn nội dung lớn.
     private String contentStoragePath;
 
     public ChapterEntity() {
     }
 
+    @Ignore
     public ChapterEntity(
             @NonNull String chapterId,
             String storyId,

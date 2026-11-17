@@ -1,7 +1,9 @@
+
 package com.example.storyverse.data.local.entity;
 
 import androidx.annotation.NonNull;
 import androidx.room.Entity;
+import androidx.room.Ignore;
 import androidx.room.PrimaryKey;
 
 @Entity(
@@ -23,7 +25,6 @@ public class NotificationEntity {
     private String title;
     private String message;
 
-    // ID của đối tượng liên quan, ví dụ storyId hoặc commentId
     private String referenceId;
 
     private boolean isRead;
@@ -33,6 +34,7 @@ public class NotificationEntity {
     public NotificationEntity() {
     }
 
+    @Ignore
     public NotificationEntity(
             @NonNull String notificationId,
             String userId,

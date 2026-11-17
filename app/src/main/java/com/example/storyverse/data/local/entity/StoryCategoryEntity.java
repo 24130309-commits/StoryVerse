@@ -1,7 +1,9 @@
+
 package com.example.storyverse.data.local.entity;
 
 import androidx.annotation.NonNull;
 import androidx.room.Entity;
+import androidx.room.Ignore;
 
 @Entity(
         tableName = "story_categories",
@@ -18,6 +20,7 @@ public class StoryCategoryEntity {
     public StoryCategoryEntity() {
     }
 
+    @Ignore
     public StoryCategoryEntity(
             @NonNull String storyId,
             @NonNull String categoryId

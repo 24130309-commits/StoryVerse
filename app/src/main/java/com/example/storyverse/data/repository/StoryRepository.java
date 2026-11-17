@@ -83,6 +83,7 @@ public class StoryRepository {
         executorService.execute(() -> {
             try {
                 List<CategoryEntity> defaults = new ArrayList<>();
+
                 String[] names = {
                         "Tiên hiệp", "Kiếm hiệp", "Huyền huyễn", "Dị giới",
                         "Phiêu lưu", "Hành động", "Đô thị", "Học đường",
@@ -90,11 +91,18 @@ public class StoryRepository {
                         "Trọng sinh", "Trinh thám", "Kinh dị", "Tâm lý",
                         "Khoa huyễn", "Quân sự", "Lịch sử", "Cung đấu", "Hài hước"
                 };
+
                 for (String name : names) {
-                    CategoryEntity category = StoryLocalMapper.toCategoryEntity(name);
-                    if (category != null) defaults.add(category);
+                    CategoryEntity category =
+                            StoryLocalMapper.toCategoryEntity(name);
+
+                    if (category != null) {
+                        defaults.add(category);
+                    }
                 }
+
                 categoryDao.insertCategoriesIfNotExists(defaults);
+
             } catch (Exception e) {
                 Log.e(TAG, "Không thể khởi tạo danh mục mặc định", e);
             }
@@ -106,21 +114,15 @@ public class StoryRepository {
     // =====================================================
 
     public void insertStory(StoryEntity story) {
-
-        executorService.execute(() ->
-                storyDao.insertStory(story)
-        );
+        executorService.execute(() -> storyDao.insertStory(story));
     }
 
     public void insertStories(List<StoryEntity> stories) {
-
         if (stories == null || stories.isEmpty()) {
             return;
         }
 
-        executorService.execute(() ->
-                storyDao.insertStories(stories)
-        );
+        executorService.execute(() -> storyDao.insertStories(stories));
     }
 
     public List<StoryEntity> getAllStories() {
@@ -140,25 +142,16 @@ public class StoryRepository {
     }
 
     public void deleteStory(StoryEntity story) {
-
-        executorService.execute(() ->
-                storyDao.deleteStory(story)
-        );
+        executorService.execute(() -> storyDao.deleteStory(story));
     }
 
     public void deleteAllStories() {
-
         executorService.execute(storyDao::deleteAllStories);
     }
 
-    public void getCachedStoryCount(
-            RepositoryCallback<Integer> callback
-    ) {
-
+    public void getCachedStoryCount(RepositoryCallback<Integer> callback) {
         executorService.execute(() -> {
-
             try {
-
                 int count = storyDao.getCachedStoryCount();
 
                 mainHandler.post(() -> {
@@ -181,23 +174,16 @@ public class StoryRepository {
             Story story,
             RepositoryCallback<StoryEntity> callback
     ) {
-
         if (!isValidStory(story)) {
-
             postError(
                     callback,
-                    new IllegalArgumentException(
-                            "Dữ liệu truyện không hợp lệ"
-                    )
+                    new IllegalArgumentException("Dữ liệu truyện không hợp lệ")
             );
-
             return;
         }
 
         executorService.execute(() -> {
-
             try {
-
                 StoryEntity storyEntity =
                         StoryLocalMapper.toStoryEntity(story);
 
@@ -208,9 +194,7 @@ public class StoryRepository {
                 }
 
                 AuthorEntity author =
-                        StoryLocalMapper.toAuthorEntity(
-                                story.getAuthor()
-                        );
+                        StoryLocalMapper.toAuthorEntity(story.getAuthor());
 
                 List<CategoryEntity> categories =
                         StoryLocalMapper.toCategoryEntities(story);
@@ -219,23 +203,13 @@ public class StoryRepository {
                         StoryLocalMapper.toStoryCategoryEntities(story);
 
                 database.runInTransaction(() -> {
-
                     saveAuthorToRoom(author);
-
                     saveCategoriesToRoom(categories);
 
                     storyDao.insertStoryIfNotExists(storyEntity);
-
-                    // Chỉ cập nhật metadata.
-                    // Không thay đổi trạng thái duyệt và thống kê.
-
                     updateStoryMetadata(storyEntity);
 
-                    // Chỉ cập nhật quan hệ thể loại
-                    // khi API thực sự cung cấp dữ liệu.
-
                     if (relations != null && !relations.isEmpty()) {
-
                         storyCategoryDao.deleteCategoriesByStoryId(
                                 storyEntity.getStoryId()
                         );
@@ -245,7 +219,6 @@ public class StoryRepository {
                 });
 
                 mainHandler.post(() -> {
-
                     if (callback != null) {
                         callback.onSuccess(storyEntity);
                     }
@@ -265,40 +238,30 @@ public class StoryRepository {
             Story story,
             RepositoryCallback<StoryEntity> callback
     ) {
-
         if (!isValidStory(story)) {
-
             postError(
                     callback,
-                    new IllegalArgumentException(
-                            "Dữ liệu truyện không hợp lệ"
-                    )
+                    new IllegalArgumentException("Dữ liệu truyện không hợp lệ")
             );
-
             return;
         }
 
         try {
-
             StoryEntity storyEntity =
                     StoryLocalMapper.toStoryEntity(story);
 
             if (storyEntity == null) {
-
                 postError(
                         callback,
                         new IllegalArgumentException(
                                 "Không thể chuyển dữ liệu truyện"
                         )
                 );
-
                 return;
             }
 
             AuthorEntity author =
-                    StoryLocalMapper.toAuthorEntity(
-                            story.getAuthor()
-                    );
+                    StoryLocalMapper.toAuthorEntity(story.getAuthor());
 
             List<CategoryEntity> categories =
                     StoryLocalMapper.toCategoryEntities(story);
@@ -312,33 +275,25 @@ public class StoryRepository {
                     categories,
                     relations,
                     new FirestoreManager.FirestoreCallback<Boolean>() {
-
                         @Override
                         public void onSuccess(Boolean result) {
-
                             if (!Boolean.TRUE.equals(result)) {
-
                                 postError(
                                         callback,
                                         new Exception(
                                                 "Không thể lưu dữ liệu lên Firestore"
                                         )
                                 );
-
                                 return;
                             }
-
-                            // Firestore thành công -> lưu Room.
 
                             saveImportedStory(
                                     story,
                                     new RepositoryCallback<StoryEntity>() {
-
                                         @Override
                                         public void onSuccess(
                                                 StoryEntity savedStory
                                         ) {
-
                                             if (callback != null) {
                                                 callback.onSuccess(savedStory);
                                             }
@@ -372,21 +327,14 @@ public class StoryRepository {
     public void syncPublishedStoriesFromFirestore(
             RepositoryCallback<Integer> callback
     ) {
-
-        // Giữ nguyên tên hàm để tương thích với code cũ.
-
         firestoreDataSource.getAllStoriesWithRelations(
                 new StoryFirestoreDataSource.SyncCallback() {
-
                     @Override
                     public void onSuccess(
                             StoryFirestoreDataSource.FirestoreSyncData data
                     ) {
-
                         executorService.execute(() -> {
-
                             try {
-
                                 cacheFirestoreData(data);
 
                                 int count = data.stories != null
@@ -394,7 +342,6 @@ public class StoryRepository {
                                         : 0;
 
                                 mainHandler.post(() -> {
-
                                     if (callback != null) {
                                         callback.onSuccess(count);
                                     }
@@ -421,35 +368,24 @@ public class StoryRepository {
     private void cacheFirestoreData(
             StoryFirestoreDataSource.FirestoreSyncData data
     ) {
-
         if (data == null || data.stories == null) {
-
             throw new IllegalArgumentException(
                     "Dữ liệu đồng bộ Firestore không hợp lệ"
             );
         }
 
         database.runInTransaction(() -> {
-
-            // Tác giả.
-
             if (data.authors != null) {
-
                 for (AuthorEntity author : data.authors) {
                     saveAuthorToRoom(author);
                 }
             }
 
-            // Thể loại.
-
             if (data.categories != null) {
                 saveCategoriesToRoom(data.categories);
             }
 
-            // Truyện.
-
             for (StoryEntity story : data.stories) {
-
                 if (story == null
                         || story.getStoryId() == null
                         || story.getStoryId().trim().isEmpty()) {
@@ -457,14 +393,10 @@ public class StoryRepository {
                 }
 
                 storyDao.insertStoryIfNotExists(story);
-
                 updateStoryMetadata(story);
-
-                // Trạng thái duyệt do Firestore quản lý.
 
                 if (story.getStatus() != null
                         && !story.getStatus().trim().isEmpty()) {
-
                     long updatedAt = story.getUpdatedAt() > 0
                             ? story.getUpdatedAt()
                             : System.currentTimeMillis();
@@ -477,12 +409,8 @@ public class StoryRepository {
                 }
             }
 
-            // Quan hệ truyện - thể loại.
-
             if (data.relations != null && !data.relations.isEmpty()) {
-
                 for (StoryEntity story : data.stories) {
-
                     if (story == null
                             || story.getStoryId() == null
                             || story.getStoryId().trim().isEmpty()) {
@@ -494,9 +422,7 @@ public class StoryRepository {
                     );
                 }
 
-                storyCategoryDao.insertStoryCategories(
-                        data.relations
-                );
+                storyCategoryDao.insertStoryCategories(data.relations);
             }
         });
     }
@@ -506,7 +432,6 @@ public class StoryRepository {
     // =====================================================
 
     private void saveAuthorToRoom(AuthorEntity author) {
-
         if (author == null
                 || author.getAuthorId() == null
                 || author.getAuthorId().trim().isEmpty()) {
@@ -527,16 +452,12 @@ public class StoryRepository {
     // 7. LƯU THỂ LOẠI VÀO ROOM
     // =====================================================
 
-    private void saveCategoriesToRoom(
-            List<CategoryEntity> categories
-    ) {
-
+    private void saveCategoriesToRoom(List<CategoryEntity> categories) {
         if (categories == null || categories.isEmpty()) {
             return;
         }
 
         for (CategoryEntity category : categories) {
-
             if (category == null
                     || category.getCategoryId() == null
                     || category.getCategoryId().trim().isEmpty()) {
@@ -559,7 +480,6 @@ public class StoryRepository {
     // =====================================================
 
     private void updateStoryMetadata(StoryEntity story) {
-
         if (story == null || story.getStoryId() == null) {
             return;
         }
@@ -590,28 +510,21 @@ public class StoryRepository {
     public void fetchAndCacheStories(
             RepositoryCallback<List<StoryEntity>> callback
     ) {
-
         firestoreDataSource.getAllStoriesWithRelations(
                 new StoryFirestoreDataSource.SyncCallback() {
-
                     @Override
                     public void onSuccess(
                             StoryFirestoreDataSource.FirestoreSyncData data
                     ) {
-
                         executorService.execute(() -> {
-
                             try {
-
                                 cacheFirestoreData(data);
 
-                                List<StoryEntity> stories =
-                                        data.stories != null
-                                                ? data.stories
-                                                : new ArrayList<>();
+                                List<StoryEntity> stories = data.stories != null
+                                        ? data.stories
+                                        : new ArrayList<>();
 
                                 mainHandler.post(() -> {
-
                                     if (callback != null) {
                                         callback.onSuccess(stories);
                                     }
@@ -638,25 +551,17 @@ public class StoryRepository {
     public void getStoriesFromCacheOrFirestore(
             RepositoryCallback<List<StoryEntity>> callback
     ) {
-
         executorService.execute(() -> {
-
             try {
-
-                List<StoryEntity> cachedStories =
-                        storyDao.getAllStories();
+                List<StoryEntity> cachedStories = storyDao.getAllStories();
 
                 if (cachedStories != null && !cachedStories.isEmpty()) {
-
                     mainHandler.post(() -> {
-
                         if (callback != null) {
                             callback.onSuccess(cachedStories);
                         }
                     });
-
                 } else {
-
                     fetchAndCacheStories(callback);
                 }
 
@@ -675,49 +580,35 @@ public class StoryRepository {
             String storyId,
             RepositoryCallback<StoryEntity> callback
     ) {
-
         if (storyId == null || storyId.trim().isEmpty()) {
-
             postError(
                     callback,
-                    new IllegalArgumentException(
-                            "ID truyện không hợp lệ"
-                    )
+                    new IllegalArgumentException("ID truyện không hợp lệ")
             );
-
             return;
         }
 
         firestoreDataSource.getStoryById(
                 storyId,
                 new FirestoreManager.FirestoreCallback<StoryEntity>() {
-
                     @Override
                     public void onSuccess(StoryEntity story) {
-
                         if (story == null) {
-
                             mainHandler.post(() -> {
-
                                 if (callback != null) {
                                     callback.onSuccess(null);
                                 }
                             });
-
                             return;
                         }
 
                         executorService.execute(() -> {
-
                             try {
-
                                 storyDao.insertStoryIfNotExists(story);
-
                                 updateStoryMetadata(story);
 
                                 if (story.getStatus() != null
                                         && !story.getStatus().trim().isEmpty()) {
-
                                     long updatedAt = story.getUpdatedAt() > 0
                                             ? story.getUpdatedAt()
                                             : System.currentTimeMillis();
@@ -730,7 +621,6 @@ public class StoryRepository {
                                 }
 
                                 mainHandler.post(() -> {
-
                                     if (callback != null) {
                                         callback.onSuccess(story);
                                     }
@@ -756,7 +646,6 @@ public class StoryRepository {
     // =====================================================
 
     public interface BulkImportCallback {
-
         void onComplete(
                 int successCount,
                 int failedCount,
@@ -768,48 +657,33 @@ public class StoryRepository {
             List<Story> stories,
             BulkImportCallback callback
     ) {
-
         if (stories == null || stories.isEmpty()) {
-
             if (callback != null) {
-
                 mainHandler.post(() ->
-                        callback.onComplete(
-                                0,
-                                0,
-                                new ArrayList<>()
-                        )
+                        callback.onComplete(0, 0, new ArrayList<>())
                 );
             }
-
             return;
         }
 
         Map<String, Story> uniqueStories = new LinkedHashMap<>();
-
         List<String> invalidErrors = new ArrayList<>();
 
         for (Story story : stories) {
-
             if (!isValidStory(story)) {
-
                 invalidErrors.add(
                         "Bỏ qua truyện không có ID hoặc tiêu đề hợp lệ."
                 );
-
                 continue;
             }
 
             uniqueStories.put(story.getStoryId(), story);
         }
 
-        List<Story> importList =
-                new ArrayList<>(uniqueStories.values());
+        List<Story> importList = new ArrayList<>(uniqueStories.values());
 
         if (importList.isEmpty()) {
-
             if (callback != null) {
-
                 mainHandler.post(() ->
                         callback.onComplete(
                                 0,
@@ -818,17 +692,10 @@ public class StoryRepository {
                         )
                 );
             }
-
             return;
         }
 
-        importStoryAtIndex(
-                importList,
-                0,
-                0,
-                invalidErrors,
-                callback
-        );
+        importStoryAtIndex(importList, 0, 0, invalidErrors, callback);
     }
 
     private void importStoryAtIndex(
@@ -838,17 +705,11 @@ public class StoryRepository {
             List<String> errors,
             BulkImportCallback callback
     ) {
-
         if (index >= stories.size()) {
-
             if (callback != null) {
-
                 int finalSuccessCount = successCount;
-
                 int finalFailedCount = errors.size();
-
-                List<String> finalErrors =
-                        new ArrayList<>(errors);
+                List<String> finalErrors = new ArrayList<>(errors);
 
                 mainHandler.post(() ->
                         callback.onComplete(
@@ -858,7 +719,6 @@ public class StoryRepository {
                         )
                 );
             }
-
             return;
         }
 
@@ -867,10 +727,8 @@ public class StoryRepository {
         saveImportedStoryToFirestoreAndRoom(
                 story,
                 new RepositoryCallback<StoryEntity>() {
-
                     @Override
                     public void onSuccess(StoryEntity result) {
-
                         importStoryAtIndex(
                                 stories,
                                 index + 1,
@@ -882,7 +740,6 @@ public class StoryRepository {
 
                     @Override
                     public void onError(Exception e) {
-
                         String storyTitle = story.getTitle() == null
                                 ? story.getStoryId()
                                 : story.getTitle();
@@ -891,15 +748,9 @@ public class StoryRepository {
                                 ? e.getMessage()
                                 : "Lỗi không xác định";
 
-                        errors.add(
-                                storyTitle + ": " + errorMessage
-                        );
+                        errors.add(storyTitle + ": " + errorMessage);
 
-                        Log.e(
-                                TAG,
-                                "Không thể nhập truyện: " + storyTitle,
-                                e
-                        );
+                        Log.e(TAG, "Không thể nhập truyện: " + storyTitle, e);
 
                         importStoryAtIndex(
                                 stories,
@@ -920,16 +771,11 @@ public class StoryRepository {
     public void getPublishedStories(
             RepositoryCallback<List<StoryEntity>> callback
     ) {
-
         executorService.execute(() -> {
-
             try {
-
-                List<StoryEntity> stories =
-                        storyDao.getPublishedStories();
+                List<StoryEntity> stories = storyDao.getPublishedStories();
 
                 mainHandler.post(() -> {
-
                     if (callback != null) {
                         callback.onSuccess(stories);
                     }
@@ -942,16 +788,42 @@ public class StoryRepository {
     }
 
     // =====================================================
-    // HOME / CATEGORY / AUTHOR - TRUY VẤN PHÂN TRANG
+    // HOME / CATEGORY / AUTHOR - TRUY VẤN
     // =====================================================
 
-    public void getCategories(RepositoryCallback<List<CategoryEntity>> callback) {
+    public void getCategories(
+            RepositoryCallback<List<CategoryEntity>> callback
+    ) {
         executorService.execute(() -> {
             try {
                 List<CategoryEntity> result = categoryDao.getAllCategories();
+
                 mainHandler.post(() -> {
-                    if (callback != null) callback.onSuccess(result);
+                    if (callback != null) {
+                        callback.onSuccess(result);
+                    }
                 });
+
+            } catch (Exception error) {
+                postError(callback, error);
+            }
+        });
+    }
+
+    // Lấy toàn bộ tác giả đã lưu trong Room.
+    public void getAuthors(
+            RepositoryCallback<List<AuthorEntity>> callback
+    ) {
+        executorService.execute(() -> {
+            try {
+                List<AuthorEntity> authors = authorDao.getAllAuthors();
+
+                mainHandler.post(() -> {
+                    if (callback != null) {
+                        callback.onSuccess(authors);
+                    }
+                });
+
             } catch (Exception error) {
                 postError(callback, error);
             }
@@ -963,16 +835,26 @@ public class StoryRepository {
             RepositoryCallback<List<CategoryEntity>> callback
     ) {
         if (storyId == null || storyId.trim().isEmpty()) {
-            postError(callback, new IllegalArgumentException("Story ID không hợp lệ"));
+            postError(
+                    callback,
+                    new IllegalArgumentException("Story ID không hợp lệ")
+            );
             return;
         }
+
         executorService.execute(() -> {
             try {
                 List<CategoryEntity> result =
-                        storyCategoryDao.getCategoriesByStoryId(storyId.trim());
+                        storyCategoryDao.getCategoryEntitiesByStoryId(
+                                storyId.trim()
+                        );
+
                 mainHandler.post(() -> {
-                    if (callback != null) callback.onSuccess(result);
+                    if (callback != null) {
+                        callback.onSuccess(result);
+                    }
                 });
+
             } catch (Exception error) {
                 postError(callback, error);
             }
@@ -986,13 +868,18 @@ public class StoryRepository {
     ) {
         int safeLimit = Math.max(1, Math.min(limit, 50));
         int safeOffset = Math.max(0, offset);
+
         executorService.execute(() -> {
             try {
                 List<StoryEntity> result =
                         storyDao.getPublishedStoriesPaged(safeLimit, safeOffset);
+
                 mainHandler.post(() -> {
-                    if (callback != null) callback.onSuccess(result);
+                    if (callback != null) {
+                        callback.onSuccess(result);
+                    }
                 });
+
             } catch (Exception error) {
                 postError(callback, error);
             }
@@ -1006,19 +893,31 @@ public class StoryRepository {
             RepositoryCallback<List<StoryEntity>> callback
     ) {
         if (categoryId == null || categoryId.trim().isEmpty()) {
-            postError(callback, new IllegalArgumentException("Category ID không hợp lệ"));
+            postError(
+                    callback,
+                    new IllegalArgumentException("Category ID không hợp lệ")
+            );
             return;
         }
+
         int safeLimit = Math.max(1, Math.min(limit, 50));
         int safeOffset = Math.max(0, offset);
+
         executorService.execute(() -> {
             try {
-                List<StoryEntity> result = storyDao.getPublishedStoriesByCategory(
-                        categoryId.trim(), safeLimit, safeOffset
-                );
+                List<StoryEntity> result =
+                        storyDao.getPublishedStoriesByCategory(
+                                categoryId.trim(),
+                                safeLimit,
+                                safeOffset
+                        );
+
                 mainHandler.post(() -> {
-                    if (callback != null) callback.onSuccess(result);
+                    if (callback != null) {
+                        callback.onSuccess(result);
+                    }
                 });
+
             } catch (Exception error) {
                 postError(callback, error);
             }
@@ -1032,19 +931,31 @@ public class StoryRepository {
             RepositoryCallback<List<StoryEntity>> callback
     ) {
         if (authorId == null || authorId.trim().isEmpty()) {
-            postError(callback, new IllegalArgumentException("Author ID không hợp lệ"));
+            postError(
+                    callback,
+                    new IllegalArgumentException("Author ID không hợp lệ")
+            );
             return;
         }
+
         int safeLimit = Math.max(1, Math.min(limit, 50));
         int safeOffset = Math.max(0, offset);
+
         executorService.execute(() -> {
             try {
-                List<StoryEntity> result = storyDao.getPublishedStoriesByAuthor(
-                        authorId.trim(), safeLimit, safeOffset
-                );
+                List<StoryEntity> result =
+                        storyDao.getPublishedStoriesByAuthor(
+                                authorId.trim(),
+                                safeLimit,
+                                safeOffset
+                        );
+
                 mainHandler.post(() -> {
-                    if (callback != null) callback.onSuccess(result);
+                    if (callback != null) {
+                        callback.onSuccess(result);
+                    }
                 });
+
             } catch (Exception error) {
                 postError(callback, error);
             }
@@ -1060,14 +971,22 @@ public class StoryRepository {
         String safeKeyword = keyword == null ? "" : keyword.trim();
         int safeLimit = Math.max(1, Math.min(limit, 50));
         int safeOffset = Math.max(0, offset);
+
         executorService.execute(() -> {
             try {
-                List<StoryEntity> result = storyDao.searchPublishedStoriesPaged(
-                        safeKeyword, safeLimit, safeOffset
-                );
+                List<StoryEntity> result =
+                        storyDao.searchPublishedStoriesPaged(
+                                safeKeyword,
+                                safeLimit,
+                                safeOffset
+                        );
+
                 mainHandler.post(() -> {
-                    if (callback != null) callback.onSuccess(result);
+                    if (callback != null) {
+                        callback.onSuccess(result);
+                    }
                 });
+
             } catch (Exception error) {
                 postError(callback, error);
             }
@@ -1082,19 +1001,14 @@ public class StoryRepository {
             String keyword,
             RepositoryCallback<List<StoryEntity>> callback
     ) {
-
         executorService.execute(() -> {
-
             try {
-
-                String searchKeyword =
-                        keyword == null ? "" : keyword.trim();
+                String searchKeyword = keyword == null ? "" : keyword.trim();
 
                 List<StoryEntity> stories =
                         storyDao.searchPublishedStories(searchKeyword);
 
                 mainHandler.post(() -> {
-
                     if (callback != null) {
                         callback.onSuccess(stories);
                     }
@@ -1114,16 +1028,12 @@ public class StoryRepository {
             String storyId,
             RepositoryCallback<StoryEntity> callback
     ) {
-
         executorService.execute(() -> {
-
             try {
-
                 StoryEntity story =
                         storyDao.getPublishedStoryById(storyId);
 
                 mainHandler.post(() -> {
-
                     if (callback == null) {
                         return;
                     }
@@ -1152,15 +1062,11 @@ public class StoryRepository {
     public void getPublishedStoryCount(
             RepositoryCallback<Integer> callback
     ) {
-
         executorService.execute(() -> {
-
             try {
-
                 int count = storyDao.getPublishedStoryCount();
 
                 mainHandler.post(() -> {
-
                     if (callback != null) {
                         callback.onSuccess(count);
                     }
@@ -1179,15 +1085,11 @@ public class StoryRepository {
     public void getPendingStoryCount(
             RepositoryCallback<Integer> callback
     ) {
-
         executorService.execute(() -> {
-
             try {
-
                 int count = storyDao.getPendingStoryCount();
 
                 mainHandler.post(() -> {
-
                     if (callback != null) {
                         callback.onSuccess(count);
                     }
@@ -1204,11 +1106,7 @@ public class StoryRepository {
     // =====================================================
 
     public interface ExternalSearchCallback {
-
-        void onSuccess(
-                List<Story> stories,
-                List<String> warnings
-        );
+        void onSuccess(List<Story> stories, List<String> warnings);
 
         void onError(String message);
     }
@@ -1217,7 +1115,6 @@ public class StoryRepository {
             String keyword,
             ExternalSearchCallback callback
     ) {
-
         if (callback == null) {
             return;
         }
@@ -1225,7 +1122,6 @@ public class StoryRepository {
         multiSourceStoryRepository.searchStories(
                 keyword,
                 new MultiSourceStoryRepository.MultiSourceCallback() {
-
                     @Override
                     public void onSuccess(
                             List<Story> stories,
@@ -1243,7 +1139,7 @@ public class StoryRepository {
     }
 
     // =====================================================
-    // API - TÌM WEBNOVEL NHẬT TỪ NAROU (METADATA + LINK NGUỒN)
+    // API - TÌM WEBNOVEL NHẬT TỪ NAROU
     // =====================================================
 
     public void searchNarouStories(
@@ -1252,14 +1148,20 @@ public class StoryRepository {
             int pageSize,
             ExternalSearchCallback callback
     ) {
-        if (callback == null) return;
+        if (callback == null) {
+            return;
+        }
+
         multiSourceStoryRepository.searchNarouStories(
                 keyword,
                 page,
                 pageSize,
                 new MultiSourceStoryRepository.MultiSourceCallback() {
                     @Override
-                    public void onSuccess(List<Story> stories, List<String> warnings) {
+                    public void onSuccess(
+                            List<Story> stories,
+                            List<String> warnings
+                    ) {
                         callback.onSuccess(stories, warnings);
                     }
 
@@ -1272,8 +1174,7 @@ public class StoryRepository {
     }
 
     // =====================================================
-    // 19. API - TÌM SÁCH CÔNG KHAI CÓ THỂ LẤY TOÀN VĂN
-    // PROJECT GUTENBERG / GUTENDEX
+    // 19. API - GUTENDEX
     // =====================================================
 
     public void searchPublicDomainStories(
@@ -1281,7 +1182,10 @@ public class StoryRepository {
             int page,
             ExternalSearchCallback callback
     ) {
-        if (callback == null) return;
+        if (callback == null) {
+            return;
+        }
+
         if (keyword == null || keyword.trim().isEmpty()) {
             callback.onError("Từ khóa tìm kiếm không được để trống");
             return;
@@ -1297,25 +1201,36 @@ public class StoryRepository {
                             Response<GutendexResponse> response
                     ) {
                         if (!response.isSuccessful() || response.body() == null) {
-                            callback.onError("Gutendex trả về HTTP " + response.code());
+                            callback.onError(
+                                    "Gutendex trả về HTTP " + response.code()
+                            );
                             return;
                         }
+
                         List<Story> stories = GutendexMapper.toStoryList(
                                 response.body().getResults()
                         );
+
                         if (stories.isEmpty()) {
                             callback.onError(
                                     "Không tìm thấy sách công khai có định dạng toàn văn phù hợp"
                             );
                             return;
                         }
+
                         callback.onSuccess(stories, new ArrayList<>());
                     }
 
                     @Override
-                    public void onFailure(Call<GutendexResponse> call, Throwable error) {
-                        callback.onError(error != null && error.getMessage() != null
-                                ? error.getMessage() : "Không thể kết nối Gutendex");
+                    public void onFailure(
+                            Call<GutendexResponse> call,
+                            Throwable error
+                    ) {
+                        callback.onError(
+                                error != null && error.getMessage() != null
+                                        ? error.getMessage()
+                                        : "Không thể kết nối Gutendex"
+                        );
                     }
                 }
         );
@@ -1331,7 +1246,6 @@ public class StoryRepository {
             int pageSize,
             ExternalSearchCallback callback
     ) {
-
         if (callback == null) {
             return;
         }
@@ -1341,7 +1255,6 @@ public class StoryRepository {
                 pageCount,
                 pageSize,
                 new MultiSourceStoryRepository.MultiSourceCallback() {
-
                     @Override
                     public void onSuccess(
                             List<Story> stories,
@@ -1360,7 +1273,6 @@ public class StoryRepository {
 
     // =====================================================
     // NHẬP SÁCH PUBLIC DOMAIN KÈM TOÀN VĂN
-    // GUTENDEX -> FIRESTORE + ROOM -> CHAPTER
     // =====================================================
 
     public void importPublicDomainStoryWithFullText(
@@ -1384,6 +1296,7 @@ public class StoryRepository {
         }
 
         int bookId;
+
         try {
             bookId = Integer.parseInt(
                     story.getStoryId().substring("gutendex_".length())
@@ -1391,7 +1304,10 @@ public class StoryRepository {
         } catch (NumberFormatException error) {
             if (callback != null) {
                 mainHandler.post(() -> callback.onError(
-                        new IllegalArgumentException("Gutendex book ID không hợp lệ", error)
+                        new IllegalArgumentException(
+                                "Gutendex book ID không hợp lệ",
+                                error
+                        )
                 ));
             }
             return;
@@ -1404,6 +1320,7 @@ public class StoryRepository {
                     public void onSuccess(StoryEntity savedStory) {
                         ChapterRepository chapterRepository =
                                 new ChapterRepository(appContext);
+
                         chapterRepository.fetchAndSaveGutendexBook(
                                 bookId,
                                 story.getStoryId(),
@@ -1414,7 +1331,9 @@ public class StoryRepository {
 
                     @Override
                     public void onError(Exception error) {
-                        if (callback != null) callback.onError(error);
+                        if (callback != null) {
+                            callback.onError(error);
+                        }
                     }
                 }
         );
@@ -1428,65 +1347,47 @@ public class StoryRepository {
             List<Story> selectedStories,
             BulkImportCallback callback
     ) {
-
-        saveImportedStoriesToFirestoreAndRoom(
-                selectedStories,
-                callback
-        );
+        saveImportedStoriesToFirestoreAndRoom(selectedStories, callback);
     }
 
     // =====================================================
     // 23. THU THẬP VÀ NHẬP KHO TRUYỆN ĐA THỂ LOẠI
-    // API -> FIRESTORE -> ROOM
     // =====================================================
 
-    public void collectAndImportGenreStories(
-            BulkImportCallback callback
-    ) {
-
+    public void collectAndImportGenreStories(BulkImportCallback callback) {
         if (callback == null) {
             return;
         }
 
         multiSourceStoryRepository.collectGenreStories(
                 new MultiSourceStoryRepository.MultiSourceCallback() {
-
                     @Override
                     public void onSuccess(
                             List<Story> stories,
                             List<String> warnings
                     ) {
-
                         if (stories == null || stories.isEmpty()) {
-
                             List<String> errors = new ArrayList<>();
 
                             if (warnings != null) {
                                 errors.addAll(warnings);
                             }
 
-                            errors.add(
-                                    "Không tìm thấy truyện để nhập vào kho."
-                            );
-
+                            errors.add("Không tìm thấy truyện để nhập vào kho.");
                             callback.onComplete(0, 0, errors);
-
                             return;
                         }
 
                         Log.i(
                                 TAG,
-                                "Thu thập được "
-                                        + stories.size()
+                                "Thu thập được " + stories.size()
                                         + " truyện sau khi khử trùng."
                         );
 
                         saveImportedStoriesToFirestoreAndRoom(
                                 stories,
                                 (successCount, failedCount, errors) -> {
-
-                                    List<String> allErrors =
-                                            new ArrayList<>();
+                                    List<String> allErrors = new ArrayList<>();
 
                                     if (warnings != null) {
                                         allErrors.addAll(warnings);
@@ -1515,12 +1416,9 @@ public class StoryRepository {
 
                     @Override
                     public void onError(String message) {
-
                         List<String> errors = new ArrayList<>();
-
                         errors.add(
-                                "Không thể thu thập kho truyện: "
-                                        + message
+                                "Không thể thu thập kho truyện: " + message
                         );
 
                         callback.onComplete(0, 0, errors);
@@ -1531,75 +1429,46 @@ public class StoryRepository {
 
     // =====================================================
     // 24. XEM TRƯỚC KHO TRUYỆN
-    // CHỈ THU THẬP - KHÔNG LƯU
     // =====================================================
 
-    public void previewGenreStories(
-            ExternalSearchCallback callback
-    ) {
-
+    public void previewGenreStories(ExternalSearchCallback callback) {
         if (callback == null) {
             return;
         }
 
         multiSourceStoryRepository.collectGenreStories(
                 new MultiSourceStoryRepository.MultiSourceCallback() {
-
                     @Override
                     public void onSuccess(
                             List<Story> stories,
                             List<String> warnings
                     ) {
+                        List<Story> resultStories = stories != null
+                                ? stories
+                                : new ArrayList<>();
 
-                        List<Story> resultStories =
-                                stories != null
-                                        ? stories
-                                        : new ArrayList<>();
+                        List<String> resultWarnings = warnings != null
+                                ? warnings
+                                : new ArrayList<>();
 
-                        List<String> resultWarnings =
-                                warnings != null
-                                        ? warnings
-                                        : new ArrayList<>();
-
-                        Log.i(
-                                TAG,
-                                "========== PREVIEW KHO TRUYỆN =========="
-                        );
-
-                        Log.i(
-                                TAG,
-                                "Tổng số truyện: "
-                                        + resultStories.size()
-                        );
-
-                        Log.i(
-                                TAG,
-                                "Tổng số cảnh báo: "
-                                        + resultWarnings.size()
-                        );
+                        Log.i(TAG, "========== PREVIEW KHO TRUYỆN ==========");
+                        Log.i(TAG, "Tổng số truyện: " + resultStories.size());
+                        Log.i(TAG, "Tổng số cảnh báo: " + resultWarnings.size());
 
                         for (String warning : resultWarnings) {
                             Log.w(TAG, warning);
                         }
 
-                        Log.i(
-                                TAG,
-                                "========== KẾT THÚC PREVIEW =========="
-                        );
+                        Log.i(TAG, "========== KẾT THÚC PREVIEW ==========");
 
-                        callback.onSuccess(
-                                resultStories,
-                                resultWarnings
-                        );
+                        callback.onSuccess(resultStories, resultWarnings);
                     }
 
                     @Override
                     public void onError(String message) {
-
                         Log.e(
                                 TAG,
-                                "Không thể xem trước kho truyện: "
-                                        + message
+                                "Không thể xem trước kho truyện: " + message
                         );
 
                         callback.onError(message);
@@ -1609,11 +1478,10 @@ public class StoryRepository {
     }
 
     // =====================================================
-    // 23. KIỂM TRA DỮ LIỆU TRUYỆN
+    // KIỂM TRA DỮ LIỆU TRUYỆN
     // =====================================================
 
     private boolean isValidStory(Story story) {
-
         return story != null
                 && story.getStoryId() != null
                 && !story.getStoryId().trim().isEmpty()
@@ -1622,16 +1490,14 @@ public class StoryRepository {
     }
 
     // =====================================================
-    // 24. ERROR HANDLING
+    // ERROR HANDLING
     // =====================================================
 
     private <T> void postError(
             RepositoryCallback<T> callback,
             Exception e
     ) {
-
         mainHandler.post(() -> {
-
             if (callback != null) {
                 callback.onError(e);
             }
@@ -1639,11 +1505,10 @@ public class StoryRepository {
     }
 
     // =====================================================
-    // 25. CALLBACK
+    // CALLBACK
     // =====================================================
 
     public interface RepositoryCallback<T> {
-
         void onSuccess(T result);
 
         void onError(Exception e);

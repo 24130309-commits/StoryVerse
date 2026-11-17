@@ -1,4 +1,3 @@
-
 package com.example.storyverse.adapter;
 
 import android.content.Context;
@@ -21,7 +20,9 @@ import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -35,6 +36,9 @@ public class StoryAdapter extends RecyclerView.Adapter<StoryAdapter.StoryViewHol
 
     private final ExecutorService imageExecutor =
             Executors.newFixedThreadPool(3);
+
+    private final Map<String, String> authorNames = new HashMap<>();
+    private final Map<String, String> storyGenres = new HashMap<>();
 
     private boolean isApiData = false;
     private boolean useHomeLayout = false;
@@ -61,7 +65,7 @@ public class StoryAdapter extends RecyclerView.Adapter<StoryAdapter.StoryViewHol
     public StoryAdapter() {
     }
 
-    // Dùng cho Reader và Search, hỗ trợ cả truyện API lẫn truyện Room.
+    // Dùng cho Reader và Search.
     public StoryAdapter(OnStoryClickListener listener) {
         this.listener = listener;
     }
@@ -107,6 +111,24 @@ public class StoryAdapter extends RecyclerView.Adapter<StoryAdapter.StoryViewHol
         this.apiItemClickListener = listener;
     }
 
+    public void setLocalMetadata(
+            Map<String, String> authors,
+            Map<String, String> genres
+    ) {
+        authorNames.clear();
+        storyGenres.clear();
+
+        if (authors != null) {
+            authorNames.putAll(authors);
+        }
+
+        if (genres != null) {
+            storyGenres.putAll(genres);
+        }
+
+        notifyDataSetChanged();
+    }
+
     @NonNull
     @Override
     public StoryViewHolder onCreateViewHolder(
@@ -139,15 +161,14 @@ public class StoryAdapter extends RecyclerView.Adapter<StoryAdapter.StoryViewHol
                 return;
             }
 
-            Story story = apiStories.get(position);
-            bindApiStory(holder, story);
+            bindApiStory(holder, apiStories.get(position));
+
         } else {
             if (position < 0 || position >= localStories.size()) {
                 return;
             }
 
-            StoryEntity story = localStories.get(position);
-            bindLocalStory(holder, story);
+            bindLocalStory(holder, localStories.get(position));
         }
     }
 
@@ -161,10 +182,11 @@ public class StoryAdapter extends RecyclerView.Adapter<StoryAdapter.StoryViewHol
 
         loadCover(holder.ivCover, story.getCoverUrl());
 
-        if (useHomeLayout) {
-            setText(holder.tvTitle, story.getTitle());
+        setText(holder.tvTitle, story.getTitle());
 
+        if (useHomeLayout) {
             String category = story.getCategory();
+
             if (category == null || category.trim().isEmpty()) {
                 category = getFirstCategory(story.getCategories());
             }
@@ -173,6 +195,7 @@ public class StoryAdapter extends RecyclerView.Adapter<StoryAdapter.StoryViewHol
             setText(holder.tvAuthor, story.getAuthor());
             setText(holder.tvDescription, story.getDescription());
             setText(holder.tvStats, "");
+
         } else {
             setText(holder.tvTitle, story.getTitle());
             setText(holder.tvAuthor, story.getAuthor());
@@ -182,7 +205,6 @@ public class StoryAdapter extends RecyclerView.Adapter<StoryAdapter.StoryViewHol
 
         holder.itemView.setContentDescription(story.getTitle());
 
-        // Giữ sự kiện click cho cả layout Search và Home.
         holder.itemView.setOnClickListener(v -> {
             int currentPosition = holder.getBindingAdapterPosition();
 
@@ -210,10 +232,25 @@ public class StoryAdapter extends RecyclerView.Adapter<StoryAdapter.StoryViewHol
 
         loadCover(holder.ivCover, story.getCoverUrl());
 
+        String storyId = story.getStoryId();
+
+        String authorName = authorNames.get(story.getAuthorId());
+
+        if (authorName == null || authorName.trim().isEmpty()) {
+            authorName = "Đang cập nhật";
+        }
+
+        String genre = storyGenres.get(storyId);
+
+        if (genre == null || genre.trim().isEmpty()) {
+            genre = "Chưa phân loại";
+        }
+
+        setText(holder.tvTitle, story.getTitle());
+
         if (useHomeLayout) {
-            setText(holder.tvTitle, story.getTitle());
-            setText(holder.tvGenre, story.getLanguage());
-            setText(holder.tvAuthor, story.getAuthorId());
+            setText(holder.tvGenre, genre);
+            setText(holder.tvAuthor, authorName);
             setText(holder.tvDescription, story.getDescription());
 
             String stats = story.getViewCount()
@@ -222,9 +259,9 @@ public class StoryAdapter extends RecyclerView.Adapter<StoryAdapter.StoryViewHol
                     + " chương";
 
             setText(holder.tvStats, stats);
+
         } else {
-            setText(holder.tvTitle, story.getTitle());
-            setText(holder.tvAuthor, story.getAuthorId());
+            setText(holder.tvAuthor, authorName);
             setText(holder.tvDescription, story.getDescription());
             setText(holder.tvSource, story.getSource());
         }
@@ -254,12 +291,17 @@ public class StoryAdapter extends RecyclerView.Adapter<StoryAdapter.StoryViewHol
         }
 
         String category = categories.get(0);
+
         return category == null ? "" : category;
     }
 
     private void setText(TextView textView, String value) {
         if (textView != null) {
-            textView.setText(value == null ? "" : value);
+            textView.setText(
+                    value == null || value.trim().isEmpty()
+                            ? ""
+                            : value
+            );
         }
     }
 
@@ -293,8 +335,10 @@ public class StoryAdapter extends RecyclerView.Adapter<StoryAdapter.StoryViewHol
                         bitmap = BitmapFactory.decodeStream(inputStream);
                     }
                 }
+
             } catch (Exception e) {
                 bitmap = null;
+
             } finally {
                 if (connection != null) {
                     connection.disconnect();
@@ -359,29 +403,31 @@ public class StoryAdapter extends RecyclerView.Adapter<StoryAdapter.StoryViewHol
             super(itemView);
 
             ivCover = itemView.findViewById(R.id.iv_story_cover);
+
             if (ivCover == null) {
                 ivCover = itemView.findViewById(R.id.imgStoryCover);
             }
 
             tvTitle = itemView.findViewById(R.id.tv_story_title);
+
             if (tvTitle == null) {
                 tvTitle = itemView.findViewById(R.id.tvStoryTitle);
             }
 
             tvAuthor = itemView.findViewById(R.id.tv_story_author);
+
             if (tvAuthor == null) {
                 tvAuthor = itemView.findViewById(R.id.tvStoryAuthor);
             }
 
             tvDescription = itemView.findViewById(R.id.tv_story_description);
+
             if (tvDescription == null) {
                 tvDescription = itemView.findViewById(R.id.tvStoryDesc);
             }
 
             tvSource = itemView.findViewById(R.id.tv_story_source);
-
             tvGenre = itemView.findViewById(R.id.tvStoryGenre);
-
             tvStats = itemView.findViewById(R.id.tvStoryStats);
         }
     }

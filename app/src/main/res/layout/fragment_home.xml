@@ -28,12 +28,16 @@
             android:textColor="#6C757D"
             android:textSize="13sp" />
 
-        <!-- Thanh tìm kiếm nhanh (Bấm để chuyển sang SearchFragment) -->
+        <!-- Thanh tìm kiếm nhanh -->
         <com.google.android.material.card.MaterialCardView
             android:id="@+id/cardSearchBar"
             android:layout_width="match_parent"
             android:layout_height="48dp"
             android:layout_marginTop="16dp"
+            android:clickable="true"
+            android:focusable="true"
+            android:contentDescription="Mở tìm kiếm truyện"
+            android:foreground="?attr/selectableItemBackground"
             app:cardBackgroundColor="#FFFFFF"
             app:cardCornerRadius="24dp"
             app:cardElevation="2dp"
@@ -52,7 +56,7 @@
                     android:layout_height="20dp"
                     android:contentDescription="Tìm kiếm"
                     android:src="@android:drawable/ic_menu_search"
-                    app:tint="#6C757D" />
+                    app:tint="#7564E8" />
 
                 <TextView
                     android:layout_width="wrap_content"
@@ -61,10 +65,12 @@
                     android:text="Tìm tên truyện, tác giả..."
                     android:textColor="#ADB5BD"
                     android:textSize="14sp" />
+
             </LinearLayout>
+
         </com.google.android.material.card.MaterialCardView>
 
-        <!-- Lịch sử tìm kiếm gần đây (Đồng bộ với SearchHistoryRepository) -->
+        <!-- Lịch sử tìm kiếm gần đây -->
         <LinearLayout
             android:id="@+id/layoutRecentSearch"
             android:layout_width="match_parent"
@@ -91,7 +97,9 @@
                     android:id="@+id/chipGroupRecentSearch"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content" />
+
             </HorizontalScrollView>
+
         </LinearLayout>
 
         <!-- Bộ lọc thể loại -->
@@ -143,7 +151,9 @@
                     android:layout_height="wrap_content"
                     android:checkable="true"
                     android:text="Sci-Fi" />
+
             </com.google.android.material.chip.ChipGroup>
+
         </HorizontalScrollView>
 
         <!-- Truyện nổi bật -->
@@ -151,12 +161,10 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="16dp"
-            android:text="Truyện Nổi Bật"
+            android:text="Truyện nổi bật"
             android:textColor="#1A1A2E"
             android:textSize="18sp"
             android:textStyle="bold" />
-
-        <!-- Danh sách truyện đề xuất -->
 
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/rvFeaturedStories"
@@ -168,12 +176,13 @@
             tools:itemCount="3"
             tools:listitem="@layout/item_story_featured" />
 
+        <!-- Danh sách đề xuất -->
         <TextView
             android:id="@+id/tvSectionListTitle"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="20dp"
-            android:text="Đề Xuất Cho Bạn"
+            android:text="Đề xuất cho bạn"
             android:textColor="#1A1A2E"
             android:textSize="18sp"
             android:textStyle="bold" />
@@ -188,4 +197,5 @@
             tools:listitem="@layout/item_story_vertical" />
 
     </LinearLayout>
+
 </androidx.core.widget.NestedScrollView>

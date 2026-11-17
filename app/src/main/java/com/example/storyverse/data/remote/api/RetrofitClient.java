@@ -1,3 +1,4 @@
+
 package com.example.storyverse.data.remote.api;
 
 import retrofit2.Retrofit;
@@ -11,26 +12,45 @@ public class RetrofitClient {
     private static Retrofit retrofit;
 
     private RetrofitClient() {
-        // Prevent creating object
     }
 
-    public static Retrofit getInstance() {
+    private static Retrofit buildRetrofit(String baseUrl) {
+        if (baseUrl == null || baseUrl.trim().isEmpty()) {
+            throw new IllegalArgumentException("Base URL không được để trống");
+        }
 
+        String normalizedUrl = baseUrl.trim();
+
+        if (!normalizedUrl.endsWith("/")) {
+            normalizedUrl += "/";
+        }
+
+        return new Retrofit.Builder()
+                .baseUrl(normalizedUrl)
+                .addConverterFactory(GsonConverterFactory.create())
+                .build();
+    }
+
+    public static synchronized Retrofit getInstance() {
         if (retrofit == null) {
-            retrofit = new Retrofit.Builder()
-                    .baseUrl(BASE_URL)
-                    .addConverterFactory(
-                            GsonConverterFactory.create()
-                    )
-                    .build();
+            retrofit = buildRetrofit(BASE_URL);
         }
 
         return retrofit;
     }
 
+    public static <T> T createService(
+            String baseUrl,
+            Class<T> serviceClass
+    ) {
+        if (serviceClass == null) {
+            throw new IllegalArgumentException("Service class không được null");
+        }
+
+        return buildRetrofit(baseUrl).create(serviceClass);
+    }
+
     public static StoryApiService getStoryApiService() {
-        return getInstance().create(
-                StoryApiService.class
-        );
+        return getInstance().create(StoryApiService.class);
     }
 }

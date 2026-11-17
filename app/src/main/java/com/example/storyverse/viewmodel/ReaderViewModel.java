@@ -18,6 +18,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class ReaderViewModel extends AndroidViewModel {
 
@@ -26,6 +27,8 @@ public class ReaderViewModel extends AndroidViewModel {
 
     private final ExecutorService executorService =
             Executors.newSingleThreadExecutor();
+
+    private final AtomicInteger chapterRequestId = new AtomicInteger(0);
 
     private final MutableLiveData<List<ChapterEntity>> chapters =
             new MutableLiveData<>(new ArrayList<>());
@@ -42,11 +45,17 @@ public class ReaderViewModel extends AndroidViewModel {
     private final MutableLiveData<Boolean> progressLoading =
             new MutableLiveData<>(false);
 
+    private final MutableLiveData<Boolean> emptyState =
+            new MutableLiveData<>(false);
+
     private final MutableLiveData<String> error =
             new MutableLiveData<>();
 
-    private String currentStoryId;
-    private String currentProgressUserId;
+    private final MutableLiveData<String> chapterError =
+            new MutableLiveData<>();
+
+    private volatile String currentStoryId;
+    private volatile String currentProgressUserId;
 
     public ReaderViewModel(@NonNull Application application) {
         super(application);
@@ -54,8 +63,6 @@ public class ReaderViewModel extends AndroidViewModel {
         chapterRepository = new ChapterRepository(application);
         readingRepository = new ReadingRepository(application);
     }
-
-    // LiveData
 
     public LiveData<List<ChapterEntity>> getChapters() {
         return chapters;
@@ -77,11 +84,17 @@ public class ReaderViewModel extends AndroidViewModel {
         return progressLoading;
     }
 
+    public LiveData<Boolean> getEmptyState() {
+        return emptyState;
+    }
+
     public LiveData<String> getError() {
         return error;
     }
 
-    // Home compatibility
+    public LiveData<String> getChapterError() {
+        return chapterError;
+    }
 
     public void setCurrentChapter(ChapterEntity chapter) {
         currentChapter.setValue(chapter);
@@ -91,17 +104,19 @@ public class ReaderViewModel extends AndroidViewModel {
         readingProgress.setValue(progress);
     }
 
-    // Load chapters
-
+    // Tải danh sách chương của truyện.
     public void loadChapters(String storyId) {
-
         if (!isValidId(storyId)) {
-            error.setValue("Story ID không hợp lệ");
+            loading.setValue(false);
+            emptyState.setValue(false);
+            chapterError.setValue("Không tìm thấy mã truyện hợp lệ.");
             return;
         }
 
         currentStoryId = storyId;
         currentProgressUserId = null;
+
+        int requestId = chapterRequestId.incrementAndGet();
 
         chapters.setValue(new ArrayList<>());
         currentChapter.setValue(null);
@@ -109,16 +124,16 @@ public class ReaderViewModel extends AndroidViewModel {
 
         loading.setValue(true);
         progressLoading.setValue(false);
+        emptyState.setValue(false);
+        chapterError.setValue(null);
         error.setValue(null);
 
         chapterRepository.getChaptersFromCacheOrFirestore(
                 storyId,
                 new ChapterRepository.RepositoryCallback<List<ChapterEntity>>() {
-
                     @Override
                     public void onSuccess(List<ChapterEntity> result) {
-
-                        if (!storyId.equals(currentStoryId)) {
+                        if (!isCurrentRequest(storyId, requestId)) {
                             return;
                         }
 
@@ -130,40 +145,42 @@ public class ReaderViewModel extends AndroidViewModel {
                         chapters.postValue(safeResult);
                         loading.postValue(false);
 
-                        if (safeResult.isEmpty()) {
-                            error.postValue(
-                                    "Truyện này hiện chưa có chương nào"
-                            );
-                        } else {
-                            error.postValue(null);
-                        }
+                        boolean isEmpty = safeResult.isEmpty();
+
+                        emptyState.postValue(isEmpty);
+                        chapterError.postValue(null);
                     }
 
                     @Override
                     public void onError(Exception e) {
-
-                        if (!storyId.equals(currentStoryId)) {
+                        if (!isCurrentRequest(storyId, requestId)) {
                             return;
                         }
 
                         loading.postValue(false);
+                        emptyState.postValue(false);
 
-                        error.postValue(
-                                e != null && e.getMessage() != null
-                                        ? e.getMessage()
-                                        : "Không thể tải danh sách chương"
+                        chapterError.postValue(
+                                getErrorMessage(
+                                        e,
+                                        "Không thể tải danh sách chương. Vui lòng thử lại."
+                                )
                         );
                     }
                 }
         );
     }
 
-    // Select chapter
+    // Thử tải lại danh sách chương.
+    public void retryLoadChapters() {
+        if (isValidId(currentStoryId)) {
+            loadChapters(currentStoryId);
+        }
+    }
 
     public void selectChapter(ChapterEntity chapter) {
-
         if (chapter == null) {
-            error.setValue("Chương không hợp lệ");
+            error.setValue("Chương không hợp lệ.");
             return;
         }
 
@@ -171,19 +188,15 @@ public class ReaderViewModel extends AndroidViewModel {
         error.setValue(null);
     }
 
-    // Find chapter index
-
     private int findChapterIndex(
             List<ChapterEntity> chapterList,
             String chapterId
     ) {
-
         if (chapterList == null || chapterId == null) {
             return -1;
         }
 
         for (int i = 0; i < chapterList.size(); i++) {
-
             ChapterEntity chapter = chapterList.get(i);
 
             if (chapter != null
@@ -195,10 +208,7 @@ public class ReaderViewModel extends AndroidViewModel {
         return -1;
     }
 
-    // Next chapter
-
     public void nextChapter() {
-
         List<ChapterEntity> chapterList = chapters.getValue();
         ChapterEntity current = currentChapter.getValue();
 
@@ -217,21 +227,16 @@ public class ReaderViewModel extends AndroidViewModel {
         );
 
         if (currentIndex < 0) {
-            error.setValue("Không tìm thấy chương hiện tại");
+            error.setValue("Không tìm thấy chương hiện tại.");
             return;
         }
 
         if (currentIndex < chapterList.size() - 1) {
             selectChapter(chapterList.get(currentIndex + 1));
-        } else {
-            error.setValue("Bạn đã đọc đến chương cuối");
         }
     }
 
-    // Previous chapter
-
     public void previousChapter() {
-
         List<ChapterEntity> chapterList = chapters.getValue();
         ChapterEntity current = currentChapter.getValue();
 
@@ -250,21 +255,17 @@ public class ReaderViewModel extends AndroidViewModel {
         );
 
         if (currentIndex < 0) {
-            error.setValue("Không tìm thấy chương hiện tại");
+            error.setValue("Không tìm thấy chương hiện tại.");
             return;
         }
 
         if (currentIndex > 0) {
             selectChapter(chapterList.get(currentIndex - 1));
-        } else {
-            error.setValue("Đây là chương đầu tiên");
         }
     }
 
-    // Save reading progress
-
+    // Lưu tiến độ đọc trên luồng nền.
     public void saveProgress(ReadingProgressEntity progress) {
-
         if (progress == null) {
             return;
         }
@@ -272,39 +273,32 @@ public class ReaderViewModel extends AndroidViewModel {
         if (!isValidId(progress.getUserId())
                 || !isValidId(progress.getStoryId())
                 || !isValidId(progress.getChapterId())) {
-
-            error.setValue("Thông tin tiến độ đọc không hợp lệ");
+            error.postValue("Thông tin tiến độ đọc không hợp lệ.");
             return;
         }
 
         executorService.execute(() -> {
-
             try {
                 readingRepository.saveProgress(progress);
-                readingProgress.postValue(progress);
+
+                if (progress.getStoryId().equals(currentStoryId)
+                        && progress.getUserId().equals(currentProgressUserId)) {
+                    readingProgress.postValue(progress);
+                }
 
             } catch (Exception e) {
                 error.postValue(
-                        e.getMessage() != null
-                                ? e.getMessage()
-                                : "Không thể lưu tiến độ đọc"
+                        getErrorMessage(e, "Không thể lưu tiến độ đọc.")
                 );
             }
         });
     }
 
-    // Load reading progress
-
+    // Khôi phục tiến độ của người dùng trên một truyện.
     public void loadProgress(String userId, String storyId) {
-
         if (!isValidId(userId) || !isValidId(storyId)) {
-
             progressLoading.setValue(false);
-
-            error.setValue(
-                    "Thông tin người dùng hoặc truyện không hợp lệ"
-            );
-
+            error.setValue("Thông tin người dùng hoặc truyện không hợp lệ.");
             return;
         }
 
@@ -318,42 +312,33 @@ public class ReaderViewModel extends AndroidViewModel {
         readingProgress.setValue(null);
 
         executorService.execute(() -> {
-
             try {
                 ReadingProgressEntity result =
                         readingRepository.getProgress(userId, storyId);
 
-                if (!storyId.equals(currentStoryId)
-                        || !userId.equals(currentProgressUserId)) {
+                if (!isCurrentProgressRequest(userId, storyId)) {
                     return;
                 }
 
                 readingProgress.postValue(result);
                 progressLoading.postValue(false);
-                error.postValue(null);
 
             } catch (Exception e) {
-
-                if (!storyId.equals(currentStoryId)
-                        || !userId.equals(currentProgressUserId)) {
+                if (!isCurrentProgressRequest(userId, storyId)) {
                     return;
                 }
 
                 progressLoading.postValue(false);
 
                 error.postValue(
-                        e.getMessage() != null
-                                ? e.getMessage()
-                                : "Không thể tải tiến độ đọc"
+                        getErrorMessage(e, "Không thể tải tiến độ đọc.")
                 );
             }
         });
     }
 
-    // Save reading history
-
+    // Lưu lịch sử mỗi khi người dùng mở một chương.
     public void saveHistory(ReadingHistoryEntity history) {
-
         if (history == null) {
             return;
         }
@@ -361,37 +346,28 @@ public class ReaderViewModel extends AndroidViewModel {
         if (!isValidId(history.getUserId())
                 || !isValidId(history.getStoryId())
                 || !isValidId(history.getChapterId())) {
-
-            error.setValue("Thông tin lịch sử đọc không hợp lệ");
+            error.postValue("Thông tin lịch sử đọc không hợp lệ.");
             return;
         }
 
         executorService.execute(() -> {
-
             try {
                 readingRepository.insertHistory(history);
-
             } catch (Exception e) {
-
                 error.postValue(
-                        e.getMessage() != null
-                                ? e.getMessage()
-                                : "Không thể lưu lịch sử đọc"
+                        getErrorMessage(e, "Không thể lưu lịch sử đọc.")
                 );
             }
         });
     }
 
-    // Insert sample chapters
-
+    // Tạo dữ liệu chương mẫu để kiểm thử Reader.
     public void insertSampleChapters(String storyId) {
-
         if (!isValidId(storyId)) {
             return;
         }
 
         List<ChapterEntity> sampleChapters = new ArrayList<>();
-
         long currentTime = System.currentTimeMillis();
 
         sampleChapters.add(
@@ -455,28 +431,49 @@ public class ReaderViewModel extends AndroidViewModel {
                 sampleChapters,
                 () -> loadChapters(storyId),
                 e -> error.postValue(
-                        e != null && e.getMessage() != null
-                                ? e.getMessage()
-                                : "Không thể tạo chương mẫu"
+                        getErrorMessage(e, "Không thể tạo chương mẫu.")
                 )
         );
     }
 
-    // Validation
+    private boolean isCurrentRequest(String storyId, int requestId) {
+        return storyId != null
+                && storyId.equals(currentStoryId)
+                && chapterRequestId.get() == requestId;
+    }
+
+    private boolean isCurrentProgressRequest(String userId, String storyId) {
+        return storyId != null
+                && userId != null
+                && storyId.equals(currentStoryId)
+                && userId.equals(currentProgressUserId);
+    }
 
     private boolean isValidId(String id) {
         return id != null && !id.trim().isEmpty();
     }
 
-    // Clear error
+    private String getErrorMessage(Exception e, String defaultMessage) {
+        return e != null
+                && e.getMessage() != null
+                && !e.getMessage().trim().isEmpty()
+                ? e.getMessage()
+                : defaultMessage;
+    }
 
     public void clearError() {
         error.setValue(null);
     }
 
+    public void clearChapterError() {
+        chapterError.setValue(null);
+    }
+
     @Override
     protected void onCleared() {
         super.onCleared();
+
+        chapterRequestId.incrementAndGet();
         executorService.shutdown();
     }
 }

@@ -1,7 +1,9 @@
+
 package com.example.storyverse.data.local.entity;
 
 import androidx.annotation.NonNull;
 import androidx.room.Entity;
+import androidx.room.Ignore;
 import androidx.room.PrimaryKey;
 
 @Entity(
@@ -31,6 +33,7 @@ public class ReadingProgressEntity {
     public ReadingProgressEntity() {
     }
 
+    @Ignore
     public ReadingProgressEntity(
             @NonNull String progressId,
             String userId,

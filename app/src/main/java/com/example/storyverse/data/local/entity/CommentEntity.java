@@ -1,7 +1,9 @@
+
 package com.example.storyverse.data.local.entity;
 
 import androidx.annotation.NonNull;
 import androidx.room.Entity;
+import androidx.room.Ignore;
 import androidx.room.PrimaryKey;
 
 @Entity(
@@ -21,7 +23,6 @@ public class CommentEntity {
 
     private String content;
 
-    // Null nếu đây là bình luận gốc
     private String parentCommentId;
 
     private long likeCount;
@@ -34,6 +35,7 @@ public class CommentEntity {
     public CommentEntity() {
     }
 
+    @Ignore
     public CommentEntity(
             @NonNull String commentId,
             String userId,

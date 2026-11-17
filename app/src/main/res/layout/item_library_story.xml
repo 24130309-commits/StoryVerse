@@ -2,7 +2,7 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:layout_marginBottom="10dp"
+    android:layout_marginBottom="12dp"
     android:background="#FFFFFF"
     android:elevation="2dp"
     android:gravity="center_vertical"
@@ -11,17 +11,17 @@
 
     <ImageView
         android:id="@+id/ivItemCover"
-        android:layout_width="60dp"
-        android:layout_height="84dp"
-        android:background="#E0E0E0"
-        android:contentDescription="Bìa truyện"
+        android:layout_width="82dp"
+        android:layout_height="112dp"
+        android:background="#EEEAF8"
+        android:contentDescription="Ảnh bìa truyện"
         android:scaleType="centerCrop"
         android:src="@android:drawable/ic_menu_gallery" />
 
     <LinearLayout
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_marginStart="12dp"
+        android:layout_marginStart="13dp"
         android:layout_weight="1"
         android:orientation="vertical">
 
@@ -32,7 +32,7 @@
             android:ellipsize="end"
             android:maxLines="2"
             android:text="Tên truyện"
-            android:textColor="#1A1A1A"
+            android:textColor="#211B36"
             android:textSize="16sp"
             android:textStyle="bold" />
 
@@ -40,29 +40,67 @@
             android:id="@+id/tvItemDescription"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="4dp"
+            android:layout_marginTop="6dp"
             android:ellipsize="end"
+            android:lineSpacingExtra="2dp"
             android:maxLines="2"
-            android:text="Mô tả ngắn..."
-            android:textColor="#666666"
+            android:text="Mô tả ngắn về nội dung truyện..."
+            android:textColor="#777184"
             android:textSize="13sp" />
 
         <TextView
             android:id="@+id/tvItemChapters"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="6dp"
+            android:layout_marginTop="8dp"
             android:text="0 chương"
-            android:textColor="#3B5BDB"
+            android:textColor="#5B4BDB"
+            android:textSize="12sp"
+            android:textStyle="bold" />
+
+        <ProgressBar
+            android:id="@+id/progressItemReading"
+            style="?android:attr/progressBarStyleHorizontal"
+            android:layout_width="match_parent"
+            android:layout_height="6dp"
+            android:layout_marginTop="8dp"
+            android:max="100"
+            android:progress="0"
+            android:progressTint="#6554D9"
+            android:progressBackgroundTint="#EAE7F5"
+            android:visibility="gone" />
+
+        <TextView
+            android:id="@+id/tvItemMeta"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
+            android:ellipsize="end"
+            android:maxLines="1"
+            android:textColor="#777184"
+            android:textSize="11sp"
+            android:visibility="gone" />
+
+        <TextView
+            android:id="@+id/tvItemRating"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="5dp"
+            android:text="★ 0.0 · 0 đánh giá"
+            android:textColor="#A36A16"
             android:textSize="12sp" />
+
     </LinearLayout>
 
     <ImageButton
         android:id="@+id/btnRemoveFavorite"
         android:layout_width="40dp"
         android:layout_height="40dp"
+        android:layout_marginStart="4dp"
         android:background="?attr/selectableItemBackgroundBorderless"
-        android:contentDescription="Xóa khỏi thư viện"
-        android:src="@android:drawable/ic_menu_delete" />
+        android:contentDescription="Xóa khỏi yêu thích"
+        android:padding="9dp"
+        android:src="@android:drawable/ic_menu_delete"
+        android:tint="#D65B68" />
 
 </LinearLayout>
