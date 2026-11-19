@@ -1,10 +1,8 @@
-
 package com.example.storyverse.data.remote.firebase;
 
 import android.content.Context;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.firebase.FirebaseApp;
-import com.google.firebase.auth.AuthResult;
 import com.google.firebase.auth.AuthResult;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
@@ -51,12 +49,12 @@ public class FirebaseAuthManager {
             return;
         }
 
-        firebaseAuth.createUserWithEmailAndPassword(
+        mAuth.createUserWithEmailAndPassword(
                 email.trim(),
                 password
         ).addOnCompleteListener(task -> {
             if (task.isSuccessful()) {
-                FirebaseUser user = firebaseAuth.getCurrentUser();
+                FirebaseUser user = mAuth.getCurrentUser();
 
                 if (callback != null) {
                     callback.onSuccess(user);
@@ -87,12 +85,12 @@ public class FirebaseAuthManager {
             return;
         }
 
-        firebaseAuth.signInWithEmailAndPassword(
+        mAuth.signInWithEmailAndPassword(
                 email.trim(),
                 password
         ).addOnCompleteListener(task -> {
             if (task.isSuccessful()) {
-                FirebaseUser user = firebaseAuth.getCurrentUser();
+                FirebaseUser user = mAuth.getCurrentUser();
 
                 if (callback != null) {
                     callback.onSuccess(user);
@@ -116,7 +114,7 @@ public class FirebaseAuthManager {
 
     // 4. Lấy UID người dùng
     public String getCurrentUserId() {
-        FirebaseUser user = firebaseAuth.getCurrentUser();
+        FirebaseUser user = mAuth.getCurrentUser();
 
         return user != null ? user.getUid() : null;
     }
@@ -126,13 +124,13 @@ public class FirebaseAuthManager {
         return mAuth.getCurrentUser() != null;
     }
 
-    // 6. Đăng xuất
+    // 6. Đăng nhập bằng listener
     public void login(String email, String password, OnCompleteListener<AuthResult> listener) {
         mAuth.signInWithEmailAndPassword(email.trim(), password.trim())
                 .addOnCompleteListener(listener);
     }
 
-    // 7. Truy cập FirebaseAuth khi cần thiết
+    // 7. Đăng ký bằng listener
     public void register(String fullName, String email, String password, OnCompleteListener<AuthResult> listener) {
         mAuth.createUserWithEmailAndPassword(email.trim(), password.trim())
                 .addOnCompleteListener(task -> {

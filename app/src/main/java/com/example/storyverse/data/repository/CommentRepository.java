@@ -7,10 +7,14 @@ import com.example.storyverse.data.local.database.StoryVerseDatabase;
 import com.example.storyverse.data.local.entity.CommentEntity;
 
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class CommentRepository {
 
     private final CommentDao commentDao;
+    private final ExecutorService executorService =
+            Executors.newSingleThreadExecutor();
 
     public CommentRepository(Context context) {
         StoryVerseDatabase database =
@@ -20,44 +24,81 @@ public class CommentRepository {
     }
 
     public void insertComment(CommentEntity comment) {
-        commentDao.insertComment(comment);
+        executorService.execute(() -> commentDao.insertComment(comment));
     }
 
     public void insertComments(List<CommentEntity> comments) {
-        commentDao.insertComments(comments);
+        executorService.execute(() -> commentDao.insertComments(comments));
     }
 
-    public List<CommentEntity> getCommentsByStoryId(
-            String storyId
+    public void getCommentsByStoryId(
+            String storyId,
+            CommentsCallback callback
     ) {
-        return commentDao.getCommentsByStoryId(storyId);
+        executorService.execute(() -> {
+            List<CommentEntity> comments = commentDao.getCommentsByStoryId(storyId);
+            callback.onCommentsReceived(comments);
+        });
     }
 
-    public List<CommentEntity> getCommentsByChapterId(
-            String chapterId
+    public void getCommentsByChapterId(
+            String chapterId,
+            CommentsCallback callback
     ) {
-        return commentDao.getCommentsByChapterId(chapterId);
+        executorService.execute(() -> {
+            List<CommentEntity> comments = commentDao.getCommentsByChapterId(chapterId);
+            callback.onCommentsReceived(comments);
+        });
     }
 
-    public List<CommentEntity> getReplies(
-            String parentCommentId
+    public void getReplies(
+            String parentCommentId,
+            CommentsCallback callback
     ) {
-        return commentDao.getReplies(parentCommentId);
+        executorService.execute(() -> {
+            List<CommentEntity> replies = commentDao.getReplies(parentCommentId);
+            callback.onCommentsReceived(replies);
+        });
     }
 
-    public CommentEntity getCommentById(String commentId) {
-        return commentDao.getCommentById(commentId);
+    public void getCommentById(
+            String commentId,
+            CommentCallback callback
+    ) {
+        executorService.execute(() -> {
+            CommentEntity comment = commentDao.getCommentById(commentId);
+            callback.onCommentReceived(comment);
+        });
     }
 
     public void deleteComment(CommentEntity comment) {
-        commentDao.deleteComment(comment);
+        executorService.execute(() -> commentDao.deleteComment(comment));
     }
 
     public void deleteCommentById(String commentId) {
-        commentDao.deleteCommentById(commentId);
+        executorService.execute(() -> commentDao.deleteCommentById(commentId));
     }
 
     public void deleteAllComments() {
-        commentDao.deleteAllComments();
+        executorService.execute(() -> commentDao.deleteAllComments());
+    }
+
+    public void insertCommentAsync(CommentEntity comment, Runnable onComplete) {
+        executorService.execute(() -> {
+            commentDao.insertComment(comment);
+            if (onComplete != null) onComplete.run();
+        });
+    }
+
+    public void getAllRootCommentsAsync(java.util.function.Consumer<List<CommentEntity>> callback) {
+        executorService.execute(() -> callback.accept(commentDao.getAllRootComments()));
+    }
+
+    public interface CommentsCallback {
+        void onCommentsReceived(List<CommentEntity> comments);
+    }
+
+    public interface CommentCallback {
+        void onCommentReceived(CommentEntity comment);
     }
 }

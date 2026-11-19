@@ -1,4 +1,3 @@
-
 package com.example.storyverse.data.local.dao;
 
 import androidx.room.Dao;
@@ -154,4 +153,11 @@ public interface CommentDao {
             String content,
             long updatedAt
     );
+
+    // =========================================
+    // SELECT - LẤY TẤT CẢ BÌNH LUẬN CỘNG ĐỒNG
+    // =========================================
+
+    @Query("SELECT * FROM comments WHERE parentCommentId IS NULL ORDER BY createdAt DESC")
+    List<CommentEntity> getAllRootComments();
 }
