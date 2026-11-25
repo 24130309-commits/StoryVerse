@@ -20,6 +20,8 @@ import androidx.navigation.Navigation;
 
 import com.example.storyverse.R;
 import com.example.storyverse.data.remote.firebase.FirebaseAuthManager;
+import com.google.firebase.auth.FirebaseAuthInvalidCredentialsException;
+import com.google.firebase.auth.FirebaseAuthInvalidUserException;
 
 public class LoginFragment extends Fragment {
 
@@ -56,7 +58,7 @@ public class LoginFragment extends Fragment {
         btnLogin = view.findViewById(R.id.btnLogin);
         tvRegister = view.findViewById(R.id.tvRegister);
 
-        btnLogin.setOnClickListener(v -> handleLogin(v));
+        btnLogin.setOnClickListener(v -> handleLogin());
 
         tvRegister.setOnClickListener(v ->
                 Navigation.findNavController(v)
@@ -64,7 +66,7 @@ public class LoginFragment extends Fragment {
         );
     }
 
-    private void handleLogin(View view) {
+    private void handleLogin() {
 
         String email = etEmail.getText().toString().trim();
         String password = etPassword.getText().toString();
@@ -76,7 +78,7 @@ public class LoginFragment extends Fragment {
         }
 
         if (!Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
-            etEmail.setError("Email không hợp lệ");
+            etEmail.setError("Email không đúng định dạng");
             etEmail.requestFocus();
             return;
         }
@@ -87,49 +89,97 @@ public class LoginFragment extends Fragment {
             return;
         }
 
+        if (password.length() < 6) {
+            etPassword.setError("Mật khẩu phải có ít nhất 6 ký tự");
+            etPassword.requestFocus();
+            return;
+        }
+
+        if (authManager == null) {
+            Toast.makeText(
+                    requireContext(),
+                    "Lỗi kết nối Firebase!",
+                    Toast.LENGTH_SHORT
+            ).show();
+            return;
+        }
+
         btnLogin.setEnabled(false);
 
-        authManager.getFirebaseAuth()
-                .signInWithEmailAndPassword(email, password)
-                .addOnCompleteListener(task -> {
+        Toast.makeText(
+                requireContext(),
+                "Đang xác thực...",
+                Toast.LENGTH_SHORT
+        ).show();
 
-                    if (!isAdded()) {
-                        return;
-                    }
+        authManager.login(email, password, task -> {
 
-                    btnLogin.setEnabled(true);
+            if (!isAdded()) {
+                return;
+            }
 
-                    if (task.isSuccessful()) {
+            btnLogin.setEnabled(true);
 
-                        Toast.makeText(
-                                requireContext(),
-                                "Đăng nhập thành công!",
-                                Toast.LENGTH_SHORT
-                        ).show();
+            if (task.isSuccessful()) {
 
-                        NavOptions navOptions = new NavOptions.Builder()
-                                .setPopUpTo(R.id.loginFragment, true)
-                                .build();
+                Toast.makeText(
+                        requireContext(),
+                        "Đăng nhập thành công!",
+                        Toast.LENGTH_SHORT
+                ).show();
 
-                        Navigation.findNavController(view)
-                                .navigate(
-                                        R.id.action_loginFragment_to_homeFragment2,
-                                        null,
-                                        navOptions
-                                );
+                NavOptions navOptions = new NavOptions.Builder()
+                        .setPopUpTo(R.id.loginFragment, true)
+                        .build();
 
-                    } else {
+                if (getView() != null) {
+                    Navigation.findNavController(getView())
+                            .navigate(
+                                    R.id.action_loginFragment_to_homeFragment2,
+                                    null,
+                                    navOptions
+                            );
+                }
 
-                        String errorMessage = task.getException() != null
-                                ? task.getException().getMessage()
-                                : "Đăng nhập thất bại. Vui lòng thử lại.";
+            } else {
 
-                        Toast.makeText(
-                                requireContext(),
-                                errorMessage,
-                                Toast.LENGTH_LONG
-                        ).show();
-                    }
-                });
+                Exception e = task.getException();
+
+                if (e instanceof FirebaseAuthInvalidUserException) {
+
+                    etEmail.setError("Email này chưa được đăng ký!");
+                    etEmail.requestFocus();
+
+                    Toast.makeText(
+                            requireContext(),
+                            "Tài khoản không tồn tại!",
+                            Toast.LENGTH_LONG
+                    ).show();
+
+                } else if (e instanceof FirebaseAuthInvalidCredentialsException) {
+
+                    etPassword.setError("Sai email hoặc mật khẩu!");
+                    etPassword.requestFocus();
+
+                    Toast.makeText(
+                            requireContext(),
+                            "Sai email hoặc mật khẩu!",
+                            Toast.LENGTH_LONG
+                    ).show();
+
+                } else {
+
+                    String msg = e != null
+                            ? e.getMessage()
+                            : "Đăng nhập thất bại!";
+
+                    Toast.makeText(
+                            requireContext(),
+                            "Đăng nhập thất bại: " + msg,
+                            Toast.LENGTH_LONG
+                    ).show();
+                }
+            }
+        });
     }
 }

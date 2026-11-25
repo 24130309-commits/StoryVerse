@@ -19,9 +19,7 @@ import com.example.storyverse.data.remote.firebase.FirebaseAuthManager;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.checkbox.MaterialCheckBox;
 import com.google.android.material.textfield.TextInputEditText;
-
-import com.google.firebase.auth.FirebaseUser;
-import com.google.firebase.auth.UserProfileChangeRequest;
+import com.google.firebase.auth.FirebaseAuthUserCollisionException;
 
 public class RegisterFragment extends Fragment {
 
@@ -104,6 +102,12 @@ public class RegisterFragment extends Fragment {
             return;
         }
 
+        if (TextUtils.isEmpty(password)) {
+            etPassword.setError("Vui lòng nhập mật khẩu");
+            etPassword.requestFocus();
+            return;
+        }
+
         if (password.length() < 6) {
             etPassword.setError("Mật khẩu phải có ít nhất 6 ký tự");
             etPassword.requestFocus();
@@ -131,72 +135,76 @@ public class RegisterFragment extends Fragment {
             return;
         }
 
+        if (authManager == null) {
+            Toast.makeText(
+                    requireContext(),
+                    "Lỗi kết nối Firebase!",
+                    Toast.LENGTH_SHORT
+            ).show();
+            return;
+        }
+
         btnRegister.setEnabled(false);
 
-        authManager.getFirebaseAuth()
-                .createUserWithEmailAndPassword(email, password)
-                .addOnCompleteListener(task -> {
+        Toast.makeText(
+                requireContext(),
+                "Đang tạo tài khoản...",
+                Toast.LENGTH_SHORT
+        ).show();
 
-                    if (!isAdded()) {
-                        return;
-                    }
+        authManager.register(fullName, email, password, task -> {
 
-                    if (task.isSuccessful()) {
+            if (!isAdded()) {
+                return;
+            }
 
-                        FirebaseUser user = task.getResult().getUser();
+            btnRegister.setEnabled(true);
 
-                        if (user != null) {
+            if (task.isSuccessful()) {
 
-                            UserProfileChangeRequest profileUpdates =
-                                    new UserProfileChangeRequest.Builder()
-                                            .setDisplayName(fullName)
-                                            .build();
+                authManager.signOut();
 
-                            user.updateProfile(profileUpdates)
-                                    .addOnCompleteListener(profileTask -> {
+                Toast.makeText(
+                        requireContext(),
+                        "Đăng ký thành công! Vui lòng đăng nhập.",
+                        Toast.LENGTH_LONG
+                ).show();
 
-                                        if (!isAdded()) {
-                                            return;
-                                        }
+                if (getView() != null) {
+                    Navigation.findNavController(getView())
+                            .navigate(
+                                    R.id.action_registerFragment_to_loginFragment
+                            );
+                }
 
-                                        authManager.signOut();
-                                        btnRegister.setEnabled(true);
+            } else {
 
-                                        Toast.makeText(
-                                                requireContext(),
-                                                "Đăng ký thành công! Vui lòng đăng nhập.",
-                                                Toast.LENGTH_LONG
-                                        ).show();
+                Exception e = task.getException();
 
-                                        Navigation.findNavController(requireView())
-                                                .navigate(R.id.action_registerFragment_to_loginFragment);
-                                    });
+                if (e instanceof FirebaseAuthUserCollisionException) {
 
-                        } else {
-                            authManager.signOut();
-                            btnRegister.setEnabled(true);
+                    etEmail.setError("Email này đã được đăng ký trước đó!");
+                    etEmail.requestFocus();
 
-                            Toast.makeText(
-                                    requireContext(),
-                                    "Không thể lấy thông tin tài khoản.",
-                                    Toast.LENGTH_SHORT
-                            ).show();
-                        }
+                    Toast.makeText(
+                            requireContext(),
+                            "Email đã tồn tại!",
+                            Toast.LENGTH_LONG
+                    ).show();
 
-                    } else {
+                } else {
 
-                        btnRegister.setEnabled(true);
+                    String errorMessage = e != null
+                            ? e.getMessage()
+                            : "Đăng ký thất bại. Vui lòng thử lại.";
 
-                        String errorMessage = task.getException() != null
-                                ? task.getException().getMessage()
-                                : "Đăng ký thất bại. Vui lòng thử lại.";
-
-                        Toast.makeText(
-                                requireContext(),
-                                errorMessage,
-                                Toast.LENGTH_LONG
-                        ).show();
-                    }
-                });
+                    Toast.makeText(
+                            requireContext(),
+                            errorMessage,
+                            Toast.LENGTH_LONG
+                    ).show();
+                }
+            }
+        });
     }
 }

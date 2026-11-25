@@ -18,7 +18,6 @@
         android:paddingTop="24dp"
         android:paddingBottom="32dp">
 
-        <!-- Header -->
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -35,7 +34,6 @@
             android:textColor="#77727F"
             android:textSize="13sp" />
 
-        <!-- Profile information -->
         <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -109,7 +107,6 @@
 
         </com.google.android.material.card.MaterialCardView>
 
-        <!-- Reading statistics -->
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -246,7 +243,6 @@
 
         </LinearLayout>
 
-        <!-- Personal library -->
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -303,7 +299,6 @@
 
         </com.google.android.material.card.MaterialCardView>
 
-        <!-- Account settings -->
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -360,7 +355,6 @@
 
         </com.google.android.material.card.MaterialCardView>
 
-        <!-- Logout -->
         <TextView
             android:id="@+id/tv_profile_logout"
             android:layout_width="match_parent"

@@ -19,6 +19,7 @@ import androidx.navigation.Navigation;
 import com.example.storyverse.R;
 import com.example.storyverse.data.remote.firebase.FirebaseAuthManager;
 import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.auth.UserProfileChangeRequest;
 
 public class ProfileFragment extends Fragment {
 
@@ -58,7 +59,11 @@ public class ProfileFragment extends Fragment {
     ) {
         super.onViewCreated(view, savedInstanceState);
 
-        authManager = new FirebaseAuthManager();
+        try {
+            authManager = new FirebaseAuthManager(requireContext());
+        } catch (Exception e) {
+            authManager = new FirebaseAuthManager();
+        }
 
         initViews(view);
         loadUserProfile();
@@ -89,6 +94,10 @@ public class ProfileFragment extends Fragment {
             tvName.setText("Khách");
             tvEmail.setText("Chưa đăng nhập");
             tvAvatar.setText("?");
+
+            tvStoryCount.setText("0");
+            tvChapterCount.setText("0");
+            tvFavoriteCount.setText("0");
             return;
         }
 
@@ -110,7 +119,6 @@ public class ProfileFragment extends Fragment {
 
         tvAvatar.setText(initial);
 
-        // Chưa có dữ liệu thống kê thực tế, giữ giá trị mặc định.
         tvStoryCount.setText("0");
         tvChapterCount.setText("0");
         tvFavoriteCount.setText("0");
@@ -118,13 +126,7 @@ public class ProfileFragment extends Fragment {
 
     private void setupClickListeners(View view) {
 
-        tvEditProfile.setOnClickListener(v ->
-                Toast.makeText(
-                        requireContext(),
-                        "Chức năng chỉnh sửa hồ sơ sẽ được triển khai sau.",
-                        Toast.LENGTH_SHORT
-                ).show()
-        );
+        tvEditProfile.setOnClickListener(v -> showEditProfileDialog());
 
         tvFavorites.setOnClickListener(v ->
                 Toast.makeText(
@@ -157,6 +159,100 @@ public class ProfileFragment extends Fragment {
         );
 
         tvLogout.setOnClickListener(v -> showLogoutConfirmation(view));
+    }
+
+    private void showEditProfileDialog() {
+        FirebaseUser user = authManager.getCurrentUser();
+
+        if (user == null) {
+            Toast.makeText(
+                    requireContext(),
+                    "Bạn chưa đăng nhập.",
+                    Toast.LENGTH_SHORT
+            ).show();
+            return;
+        }
+
+        android.widget.EditText editText = new android.widget.EditText(requireContext());
+        editText.setSingleLine(true);
+        editText.setHint("Nhập họ và tên");
+
+        String currentName = user.getDisplayName();
+        if (!TextUtils.isEmpty(currentName)) {
+            editText.setText(currentName);
+            editText.setSelection(currentName.length());
+        }
+
+        editText.setPadding(48, 24, 48, 24);
+
+        new AlertDialog.Builder(requireContext())
+                .setTitle("Chỉnh sửa hồ sơ")
+                .setMessage("Cập nhật tên hiển thị của bạn")
+                .setView(editText)
+                .setNegativeButton("Hủy", (dialog, which) -> dialog.dismiss())
+                .setPositiveButton("Lưu", (dialog, which) ->
+                        updateProfileName(editText.getText().toString())
+                )
+                .show();
+    }
+
+    private void updateProfileName(String name) {
+        name = name.trim();
+
+        if (TextUtils.isEmpty(name)) {
+            Toast.makeText(
+                    requireContext(),
+                    "Họ và tên không được để trống.",
+                    Toast.LENGTH_SHORT
+            ).show();
+            return;
+        }
+
+        FirebaseUser user = authManager.getCurrentUser();
+
+        if (user == null) {
+            Toast.makeText(
+                    requireContext(),
+                    "Phiên đăng nhập không còn hợp lệ.",
+                    Toast.LENGTH_SHORT
+            ).show();
+            return;
+        }
+
+        final String updatedName = name;
+
+        UserProfileChangeRequest profileUpdates =
+                new UserProfileChangeRequest.Builder()
+                        .setDisplayName(updatedName)
+                        .build();
+
+        user.updateProfile(profileUpdates)
+                .addOnCompleteListener(task -> {
+                    if (!isAdded()) return;
+
+                    if (task.isSuccessful()) {
+                        tvName.setText(updatedName);
+                        tvAvatar.setText(
+                                updatedName.substring(0, 1).toUpperCase()
+                        );
+
+                        Toast.makeText(
+                                requireContext(),
+                                "Cập nhật thông tin thành công!",
+                                Toast.LENGTH_SHORT
+                        ).show();
+                    } else {
+                        String error = task.getException() != null
+                                ? task.getException().getMessage()
+                                : "Không thể cập nhật thông tin.";
+
+                        Toast.makeText(
+                                requireContext(),
+                                error,
+                                Toast.LENGTH_LONG
+                        ).show();
+                    }
+                });
     }
 
     private void showLogoutConfirmation(View view) {
