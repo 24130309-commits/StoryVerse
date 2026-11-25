@@ -7,6 +7,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.LinearLayout;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -31,15 +32,22 @@ import com.google.android.material.chip.Chip;
 import com.google.android.material.chip.ChipGroup;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 public class HomeFragment extends Fragment {
 
     private static final String TAG = "HOME_CATEGORY";
     private static final String ARG_STORY_ID = "storyId";
+
+    private static final int MAX_FEATURED_STORIES = 5;
+    private static final int CATEGORY_PAGE_SIZE = 50;
 
     private RecyclerView rvFeaturedStories;
     private RecyclerView rvAllStories;
@@ -54,13 +62,20 @@ public class HomeFragment extends Fragment {
     private ChipGroup chipGroupRecentSearch;
 
     private LinearLayout layoutRecentSearch;
+    private LinearLayout layoutHomeEmpty;
+    private LinearLayout layoutHomeError;
+
+    private ProgressBar progressHome;
 
     private TextView tvSectionListTitle;
 
     private MaterialCardView cardSearchBar;
 
     private List<StoryEntity> allStoriesCache = new ArrayList<>();
+    private List<StoryEntity> recommendationStoriesCache = new ArrayList<>();
     private List<CategoryEntity> allCategories = new ArrayList<>();
+
+    private final Set<String> featuredStoryIds = new HashSet<>();
 
     private String selectedCategoryId = "";
 
@@ -89,6 +104,8 @@ public class HomeFragment extends Fragment {
         setupRecyclerViews();
         setupSearchHistoryDatabase();
         setupListeners();
+
+        showLoading();
         loadStoryData();
     }
 
@@ -97,6 +114,7 @@ public class HomeFragment extends Fragment {
     // =====================================================
 
     private void initViews(View view) {
+
         rvFeaturedStories = view.findViewById(R.id.rvFeaturedStories);
         rvAllStories = view.findViewById(R.id.rvAllStories);
 
@@ -104,9 +122,75 @@ public class HomeFragment extends Fragment {
         chipGroupRecentSearch = view.findViewById(R.id.chipGroupRecentSearch);
 
         layoutRecentSearch = view.findViewById(R.id.layoutRecentSearch);
+        layoutHomeEmpty = view.findViewById(R.id.layoutHomeEmpty);
+        layoutHomeError = view.findViewById(R.id.layoutHomeError);
+
+        progressHome = view.findViewById(R.id.progressHome);
+
         tvSectionListTitle = view.findViewById(R.id.tvSectionListTitle);
 
         cardSearchBar = view.findViewById(R.id.cardSearchBar);
+    }
+
+    // =====================================================
+    // TRẠNG THÁI GIAO DIỆN
+    // =====================================================
+
+    private void showLoading() {
+
+        progressHome.setVisibility(View.VISIBLE);
+
+        layoutHomeEmpty.setVisibility(View.GONE);
+        layoutHomeError.setVisibility(View.GONE);
+
+        rvFeaturedStories.setVisibility(View.GONE);
+        rvAllStories.setVisibility(View.GONE);
+    }
+
+    private void showListLoading() {
+
+        progressHome.setVisibility(View.VISIBLE);
+
+        layoutHomeEmpty.setVisibility(View.GONE);
+        layoutHomeError.setVisibility(View.GONE);
+
+        rvFeaturedStories.setVisibility(
+                allStoriesCache.isEmpty() ? View.GONE : View.VISIBLE
+        );
+
+        rvAllStories.setVisibility(View.GONE);
+    }
+
+    private void showContentState(boolean isEmpty) {
+
+        progressHome.setVisibility(View.GONE);
+        layoutHomeError.setVisibility(View.GONE);
+
+        rvFeaturedStories.setVisibility(
+                allStoriesCache.isEmpty() ? View.GONE : View.VISIBLE
+        );
+
+        if (isEmpty) {
+
+            rvAllStories.setVisibility(View.GONE);
+            layoutHomeEmpty.setVisibility(View.VISIBLE);
+
+        } else {
+
+            rvAllStories.setVisibility(View.VISIBLE);
+            layoutHomeEmpty.setVisibility(View.GONE);
+        }
+    }
+
+    private void showError() {
+
+        progressHome.setVisibility(View.GONE);
+
+        rvFeaturedStories.setVisibility(View.GONE);
+        rvAllStories.setVisibility(View.GONE);
+
+        layoutHomeEmpty.setVisibility(View.GONE);
+        layoutHomeError.setVisibility(View.VISIBLE);
     }
 
     // =====================================================
@@ -142,6 +226,7 @@ public class HomeFragment extends Fragment {
         rvAllStories.setAdapter(verticalAdapter);
 
         rvAllStories.setNestedScrollingEnabled(false);
+        rvFeaturedStories.setNestedScrollingEnabled(false);
     }
 
     // =====================================================
@@ -158,7 +243,12 @@ public class HomeFragment extends Fragment {
                 getViewLifecycleOwner(),
                 histories -> {
 
+                    if (!isAdded() || getView() == null) {
+                        return;
+                    }
+
                     if (histories == null || histories.isEmpty()) {
+
                         layoutRecentSearch.setVisibility(View.GONE);
                         return;
                     }
@@ -167,6 +257,12 @@ public class HomeFragment extends Fragment {
                     chipGroupRecentSearch.removeAllViews();
 
                     for (SearchHistoryEntity item : histories) {
+
+                        if (item == null
+                                || item.getKeyword() == null
+                                || item.getKeyword().trim().isEmpty()) {
+                            continue;
+                        }
 
                         Chip chip = new Chip(requireContext());
 
@@ -199,12 +295,14 @@ public class HomeFragment extends Fragment {
                     @Override
                     public void onSuccess(Integer count) {
 
-                        if (!isAdded()) {
+                        if (!isAdded() || getView() == null) {
                             return;
                         }
 
-                        Log.d(TAG,
-                                "Đồng bộ Firestore thành công. Số truyện: " + count);
+                        Log.d(
+                                TAG,
+                                "Đồng bộ Firestore thành công. Số truyện: " + count
+                        );
 
                         loadHomeDataFromRoom();
                     }
@@ -212,10 +310,13 @@ public class HomeFragment extends Fragment {
                     @Override
                     public void onError(Exception e) {
 
-                        Log.e(TAG,
-                                "Không thể đồng bộ Firestore, chuyển sang Room", e);
+                        Log.e(
+                                TAG,
+                                "Không thể đồng bộ Firestore, chuyển sang Room",
+                                e
+                        );
 
-                        if (!isAdded()) {
+                        if (!isAdded() || getView() == null) {
                             return;
                         }
 
@@ -233,7 +334,7 @@ public class HomeFragment extends Fragment {
                     @Override
                     public void onSuccess(List<StoryEntity> stories) {
 
-                        if (!isAdded()) {
+                        if (!isAdded() || getView() == null) {
                             return;
                         }
 
@@ -241,11 +342,13 @@ public class HomeFragment extends Fragment {
                                 ? new ArrayList<>(stories)
                                 : new ArrayList<>();
 
-                        Log.d(TAG,
+                        Log.d(
+                                TAG,
                                 "Số truyện đã xuất bản trong Room: "
-                                        + allStoriesCache.size());
+                                        + allStoriesCache.size()
+                        );
 
-                        displayAllStories();
+                        prepareHomeStories();
 
                         loadStoryMetadata();
                         loadCategories();
@@ -254,23 +357,24 @@ public class HomeFragment extends Fragment {
                     @Override
                     public void onError(Exception e) {
 
-                        Log.e(TAG,
-                                "Không thể tải danh sách truyện từ Room", e);
+                        Log.e(
+                                TAG,
+                                "Không thể tải danh sách truyện từ Room",
+                                e
+                        );
 
-                        if (!isAdded()) {
+                        if (!isAdded() || getView() == null) {
                             return;
                         }
 
                         allStoriesCache.clear();
+                        recommendationStoriesCache.clear();
+                        featuredStoryIds.clear();
 
-                        featuredAdapter.setStories(allStoriesCache);
-                        verticalAdapter.setStories(allStoriesCache);
+                        featuredAdapter.setStories(new ArrayList<>());
+                        verticalAdapter.setStories(new ArrayList<>());
 
-                        Toast.makeText(
-                                requireContext(),
-                                "Không thể tải danh sách truyện",
-                                Toast.LENGTH_SHORT
-                        ).show();
+                        showError();
 
                         loadCategories();
                     }
@@ -279,15 +383,127 @@ public class HomeFragment extends Fragment {
     }
 
     // =====================================================
-    // HIỂN THỊ TRUYỆN
+    // PHÂN LOẠI TRUYỆN NỔI BẬT VÀ ĐỀ XUẤT
     // =====================================================
 
-    private void displayAllStories() {
+    private void prepareHomeStories() {
 
-        featuredAdapter.setStories(allStoriesCache);
-        verticalAdapter.setStories(allStoriesCache);
+        List<StoryEntity> sortedStories = new ArrayList<>();
 
-        tvSectionListTitle.setText("Đề Xuất Cho Bạn");
+        for (StoryEntity story : allStoriesCache) {
+
+            if (story == null || story.getStoryId() == null) {
+                continue;
+            }
+
+            sortedStories.add(story);
+        }
+
+        // Xếp hạng truyện theo mức độ quan tâm.
+        Collections.sort(sortedStories, new Comparator<StoryEntity>() {
+            @Override
+            public int compare(StoryEntity first, StoryEntity second) {
+
+                int result = Long.compare(
+                        second.getViewCount(),
+                        first.getViewCount()
+                );
+
+                if (result != 0) {
+                    return result;
+                }
+
+                result = Double.compare(
+                        second.getRatingAverage(),
+                        first.getRatingAverage()
+                );
+
+                if (result != 0) {
+                    return result;
+                }
+
+                result = Long.compare(
+                        second.getFavoriteCount(),
+                        first.getFavoriteCount()
+                );
+
+                if (result != 0) {
+                    return result;
+                }
+
+                return Long.compare(
+                        second.getFavoriteCount(),
+                        first.getFavoriteCount()
+                );
+            }
+        });
+
+        // Chỉ lấy một phần danh sách làm truyện nổi bật.
+        int featuredCount = getFeaturedStoryCount(sortedStories.size());
+
+        List<StoryEntity> featuredStories = new ArrayList<>();
+
+        featuredStoryIds.clear();
+
+        for (int i = 0; i < featuredCount; i++) {
+
+            StoryEntity story = sortedStories.get(i);
+
+            featuredStories.add(story);
+            featuredStoryIds.add(story.getStoryId());
+        }
+
+        // Các truyện còn lại được xếp theo thời gian cập nhật.
+        recommendationStoriesCache = new ArrayList<>();
+
+        for (StoryEntity story : sortedStories) {
+
+            if (!featuredStoryIds.contains(story.getStoryId())) {
+                recommendationStoriesCache.add(story);
+            }
+        }
+
+        Collections.sort(
+                recommendationStoriesCache,
+                (first, second) -> Long.compare(
+                        getStorySortTime(second),
+                        getStorySortTime(first)
+                )
+        );
+
+        featuredAdapter.setStories(featuredStories);
+
+        if (selectedCategoryId.isEmpty()) {
+
+            verticalAdapter.setStories(
+                    new ArrayList<>(recommendationStoriesCache)
+            );
+
+            tvSectionListTitle.setText("Đề xuất cho bạn");
+        }
+
+        showContentState(recommendationStoriesCache.isEmpty());
+    }
+
+    private int getFeaturedStoryCount(int totalStories) {
+
+        if (totalStories < 2) {
+            return 0;
+        }
+
+        return Math.min(
+                MAX_FEATURED_STORIES,
+                Math.max(1, totalStories / 4)
+        );
+    }
+
+    private long getStorySortTime(StoryEntity story) {
+
+        if (story.getUpdatedAt() > 0) {
+            return story.getUpdatedAt();
+        }
+
+        return story.getCreatedAt();
     }
 
     // =====================================================
@@ -306,13 +522,14 @@ public class HomeFragment extends Fragment {
                     @Override
                     public void onSuccess(List<AuthorEntity> authors) {
 
-                        if (!isAdded()) {
+                        if (!isAdded() || getView() == null) {
                             return;
                         }
 
                         Map<String, String> authorMap = new HashMap<>();
 
                         if (authors != null) {
+
                             for (AuthorEntity author : authors) {
 
                                 if (author == null
@@ -333,10 +550,13 @@ public class HomeFragment extends Fragment {
                     @Override
                     public void onError(Exception e) {
 
-                        Log.e(TAG,
-                                "Không thể tải thông tin tác giả", e);
+                        Log.e(
+                                TAG,
+                                "Không thể tải thông tin tác giả",
+                                e
+                        );
 
-                        if (!isAdded()) {
+                        if (!isAdded() || getView() == null) {
                             return;
                         }
 
@@ -374,7 +594,7 @@ public class HomeFragment extends Fragment {
                         @Override
                         public void onSuccess(List<CategoryEntity> categories) {
 
-                            if (!isAdded()) {
+                            if (!isAdded() || getView() == null) {
                                 return;
                             }
 
@@ -393,6 +613,7 @@ public class HomeFragment extends Fragment {
                                 }
 
                                 if (!names.isEmpty()) {
+
                                     genreMap.put(
                                             story.getStoryId(),
                                             android.text.TextUtils.join(", ", names)
@@ -410,11 +631,14 @@ public class HomeFragment extends Fragment {
                         @Override
                         public void onError(Exception e) {
 
-                            Log.e(TAG,
+                            Log.e(
+                                    TAG,
                                     "Không thể tải thể loại của truyện: "
-                                            + story.getStoryId(), e);
+                                            + story.getStoryId(),
+                                    e
+                            );
 
-                            if (!isAdded()) {
+                            if (!isAdded() || getView() == null) {
                                 return;
                             }
 
@@ -438,7 +662,7 @@ public class HomeFragment extends Fragment {
             Map<String, String> genreMap
     ) {
 
-        if (!isAdded()) {
+        if (!isAdded() || getView() == null) {
             return;
         }
 
@@ -460,7 +684,7 @@ public class HomeFragment extends Fragment {
                     @Override
                     public void onSuccess(List<CategoryEntity> categories) {
 
-                        if (!isAdded()) {
+                        if (!isAdded() || getView() == null) {
                             return;
                         }
 
@@ -468,19 +692,11 @@ public class HomeFragment extends Fragment {
                                 ? new ArrayList<>(categories)
                                 : new ArrayList<>();
 
-                        Log.d(TAG,
+                        Log.d(
+                                TAG,
                                 "Tải danh mục thành công. Số lượng: "
-                                        + allCategories.size());
-
-                        for (CategoryEntity category : allCategories) {
-                            if (category != null) {
-                                Log.d(TAG,
-                                        "Category: "
-                                                + category.getCategoryId()
-                                                + " | "
-                                                + category.getName());
-                            }
-                        }
+                                        + allCategories.size()
+                        );
 
                         setupGenreChips();
                     }
@@ -488,10 +704,13 @@ public class HomeFragment extends Fragment {
                     @Override
                     public void onError(Exception e) {
 
-                        Log.e(TAG,
-                                "Lỗi khi tải danh mục thể loại từ Room", e);
+                        Log.e(
+                                TAG,
+                                "Lỗi khi tải danh mục thể loại từ Room",
+                                e
+                        );
 
-                        if (!isAdded()) {
+                        if (!isAdded() || getView() == null) {
                             return;
                         }
 
@@ -561,13 +780,19 @@ public class HomeFragment extends Fragment {
             String categoryName
     ) {
 
-        selectedCategoryId = categoryId == null ? "" : categoryId.trim();
+        selectedCategoryId = categoryId == null
+                ? ""
+                : categoryId.trim();
 
         if (selectedCategoryId.isEmpty()) {
 
-            tvSectionListTitle.setText("Đề Xuất Cho Bạn");
+            tvSectionListTitle.setText("Đề xuất cho bạn");
 
-            verticalAdapter.setStories(new ArrayList<>(allStoriesCache));
+            verticalAdapter.setStories(
+                    new ArrayList<>(recommendationStoriesCache)
+            );
+
+            showContentState(recommendationStoriesCache.isEmpty());
 
             return;
         }
@@ -576,9 +801,12 @@ public class HomeFragment extends Fragment {
 
         tvSectionListTitle.setText("Thể loại: " + categoryName);
 
+        // Chỉ tải lại danh sách đề xuất, giữ nguyên truyện nổi bật.
+        showListLoading();
+
         storyRepository.getPublishedStoriesByCategory(
                 requestedCategoryId,
-                50,
+                CATEGORY_PAGE_SIZE,
                 0,
                 new StoryRepository.RepositoryCallback<List<StoryEntity>>() {
 
@@ -586,36 +814,61 @@ public class HomeFragment extends Fragment {
                     public void onSuccess(List<StoryEntity> stories) {
 
                         if (!isAdded()
+                                || getView() == null
                                 || !requestedCategoryId.equals(selectedCategoryId)) {
                             return;
                         }
 
-                        verticalAdapter.setStories(
-                                stories != null
-                                        ? stories
-                                        : new ArrayList<>()
+                        List<StoryEntity> filteredStories = new ArrayList<>();
+
+                        if (stories != null) {
+
+                            for (StoryEntity story : stories) {
+
+                                if (story == null
+                                        || story.getStoryId() == null) {
+                                    continue;
+                                }
+
+                                // Không lặp truyện đã nằm trong khu vực nổi bật.
+                                if (!featuredStoryIds.contains(story.getStoryId())) {
+                                    filteredStories.add(story);
+                                }
+                            }
+                        }
+
+                        Collections.sort(
+                                filteredStories,
+                                (first, second) -> Long.compare(
+                                        getStorySortTime(second),
+                                        getStorySortTime(first)
+                                )
                         );
+
+                        verticalAdapter.setStories(filteredStories);
+
+                        showContentState(filteredStories.isEmpty());
                     }
 
                     @Override
                     public void onError(Exception e) {
 
-                        Log.e(TAG,
+                        Log.e(
+                                TAG,
                                 "Không thể lọc truyện theo thể loại: "
-                                        + requestedCategoryId, e);
+                                        + requestedCategoryId,
+                                e
+                        );
 
                         if (!isAdded()
+                                || getView() == null
                                 || !requestedCategoryId.equals(selectedCategoryId)) {
                             return;
                         }
 
                         verticalAdapter.setStories(new ArrayList<>());
 
-                        Toast.makeText(
-                                requireContext(),
-                                "Không thể lọc truyện theo thể loại",
-                                Toast.LENGTH_SHORT
-                        ).show();
+                        showError();
                     }
                 }
         );
@@ -661,14 +914,20 @@ public class HomeFragment extends Fragment {
     }
 
     private void openSearchFragmentWithKeyword(String keyword) {
+
         if (!isAdded() || getView() == null) {
             return;
         }
 
         Bundle args = new Bundle();
-        args.putString("SEARCH_KEYWORD", keyword == null ? "" : keyword);
+
+        args.putString(
+                "SEARCH_KEYWORD",
+                keyword == null ? "" : keyword
+        );
 
         try {
+
             NavController navController =
                     NavHostFragment.findNavController(this);
 
@@ -678,6 +937,7 @@ public class HomeFragment extends Fragment {
             );
 
         } catch (IllegalArgumentException e) {
+
             Log.e(TAG, "Không thể mở màn hình tìm kiếm", e);
 
             Toast.makeText(
@@ -687,13 +947,14 @@ public class HomeFragment extends Fragment {
             ).show();
         }
     }
+
     // =====================================================
     // ĐIỀU HƯỚNG CHI TIẾT TRUYỆN
     // =====================================================
 
     private void onStorySelected(StoryEntity story) {
 
-        if (!isAdded()) {
+        if (!isAdded() || getView() == null) {
             return;
         }
 
@@ -713,9 +974,11 @@ public class HomeFragment extends Fragment {
         String storyId = story.getStoryId().trim();
 
         Bundle bundle = new Bundle();
+
         bundle.putString(ARG_STORY_ID, storyId);
 
         try {
+
             NavController navController =
                     NavHostFragment.findNavController(this);
 
@@ -726,8 +989,11 @@ public class HomeFragment extends Fragment {
 
         } catch (IllegalArgumentException e) {
 
-            Log.e(TAG,
-                    "Không thể điều hướng đến StoryDetailFragment", e);
+            Log.e(
+                    TAG,
+                    "Không thể điều hướng đến StoryDetailFragment",
+                    e
+            );
 
             Toast.makeText(
                     requireContext(),

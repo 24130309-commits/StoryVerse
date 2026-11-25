@@ -1,3 +1,4 @@
+
 package com.example.storyverse.ui.reader;
 
 import android.content.Context;
@@ -43,6 +44,7 @@ public class ReaderFragment extends Fragment {
 
     private static final String ARG_STORY_ID = "storyId";
     private static final String ARG_STORY_TITLE = "storyTitle";
+    private static final String ARG_CHAPTER_ID = "chapterId";
 
     private static final String PREF_READER_SETTINGS = "reader_settings";
     private static final String KEY_FONT_SIZE = "font_size";
@@ -98,6 +100,8 @@ public class ReaderFragment extends Fragment {
     private SharedPreferences readerPreferences;
 
     private String currentStoryId;
+    private String requestedChapterId;
+
     private String currentStoryTitle = "Đang đọc truyện";
     private String currentStoryAuthor;
     private String currentStorySource;
@@ -119,6 +123,8 @@ public class ReaderFragment extends Fragment {
     private boolean chaptersLoaded;
     private boolean progressLoaded;
     private boolean progressLoadRequested;
+
+    private boolean requestedChapterHandled;
 
     private boolean canGoPrevious;
     private boolean canGoNext;
@@ -215,6 +221,8 @@ public class ReaderFragment extends Fragment {
 
         if (args != null) {
             currentStoryId = args.getString(ARG_STORY_ID);
+
+            requestedChapterId = args.getString(ARG_CHAPTER_ID);
 
             String title = args.getString(ARG_STORY_TITLE);
 
@@ -466,6 +474,32 @@ public class ReaderFragment extends Fragment {
 
                     progressLoaded = true;
 
+                    // Ưu tiên chương được chọn từ màn hình Chi tiết truyện.
+                    if (!requestedChapterHandled
+                            && hasText(requestedChapterId)) {
+
+                        requestedChapterHandled = true;
+
+                        ChapterEntity requestedChapter =
+                                findChapterById(
+                                        chapters,
+                                        requestedChapterId
+                                );
+
+                        if (requestedChapter != null) {
+                            pendingScrollPosition = 0;
+                            shouldRestoreScroll = false;
+
+                            readerViewModel.selectChapter(
+                                    requestedChapter
+                            );
+
+                            return;
+                        }
+                    }
+
+                    // Nếu không được chỉ định chương cụ thể,
+                    // tiếp tục khôi phục tiến độ đọc đã lưu.
                     ReadingProgressEntity savedProgress =
                             readerViewModel.getReadingProgress().getValue();
 

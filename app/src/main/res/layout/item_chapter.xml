@@ -12,24 +12,24 @@
         android:id="@+id/layout_chapter_content"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:minHeight="70dp"
+        android:minHeight="76dp"
         android:gravity="center_vertical"
         android:orientation="horizontal"
-        android:paddingStart="12dp"
-        android:paddingTop="10dp"
-        android:paddingEnd="12dp"
-        android:paddingBottom="10dp"
+        android:paddingStart="14dp"
+        android:paddingTop="12dp"
+        android:paddingEnd="14dp"
+        android:paddingBottom="12dp"
         android:background="?attr/selectableItemBackground">
 
         <TextView
             android:id="@+id/tv_chapter_number"
-            android:layout_width="44dp"
-            android:layout_height="44dp"
+            android:layout_width="46dp"
+            android:layout_height="46dp"
             android:background="@drawable/bg_chapter_number"
             android:gravity="center"
             android:text="01"
-            android:textColor="#6654D9"
-            android:textSize="13sp"
+            android:textColor="#6842B8"
+            android:textSize="14sp"
             android:textStyle="bold" />
 
         <LinearLayout
@@ -44,8 +44,8 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:text="Tên chương"
-                android:textColor="#29253C"
-                android:textSize="14sp"
+                android:textColor="#24212B"
+                android:textSize="15sp"
                 android:textStyle="bold"
                 android:maxLines="2"
                 android:ellipsize="end" />
@@ -54,15 +54,15 @@
                 android:id="@+id/tv_chapter_status"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="5dp"
+                android:layout_marginTop="6dp"
                 android:background="@drawable/bg_reader_chapter_label"
-                android:paddingStart="7dp"
-                android:paddingTop="3dp"
-                android:paddingEnd="7dp"
-                android:paddingBottom="3dp"
+                android:paddingStart="9dp"
+                android:paddingTop="4dp"
+                android:paddingEnd="9dp"
+                android:paddingBottom="4dp"
                 android:text="ĐANG ĐỌC"
-                android:textColor="#6654D9"
-                android:textSize="9sp"
+                android:textColor="#6842B8"
+                android:textSize="10sp"
                 android:textStyle="bold"
                 android:visibility="gone" />
         </LinearLayout>
@@ -80,7 +80,8 @@
     <View
         android:layout_width="match_parent"
         android:layout_height="1dp"
-        android:layout_marginStart="70dp"
-        android:layout_marginEnd="10dp"
-        android:background="#F0EDF5" />
+        android:layout_marginStart="74dp"
+        android:layout_marginEnd="14dp"
+        android:background="#EAE6F0" />
+
 </LinearLayout>

@@ -20,6 +20,8 @@ import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 import androidx.navigation.NavController;
 import androidx.navigation.Navigation;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.load.DataSource;
@@ -27,12 +29,18 @@ import com.bumptech.glide.load.engine.GlideException;
 import com.bumptech.glide.request.RequestListener;
 import com.bumptech.glide.request.target.Target;
 import com.example.storyverse.R;
+import com.example.storyverse.adapter.ChapterAdapter;
+import com.example.storyverse.data.local.entity.ChapterEntity;
 import com.example.storyverse.data.local.entity.FavoriteEntity;
 import com.example.storyverse.data.local.entity.StoryEntity;
+import com.example.storyverse.data.repository.ChapterRepository;
 import com.example.storyverse.data.repository.FavoriteRepository;
 import com.example.storyverse.data.repository.StoryRepository;
 import com.example.storyverse.utils.UserSessionManager;
 
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -40,22 +48,32 @@ import java.util.concurrent.Executors;
 public class StoryDetailFragment extends Fragment {
 
     private static final String ARG_STORY_ID = "storyId";
+    private static final String ARG_CHAPTER_ID = "chapterId";
 
     private TextView tvTitle;
     private TextView tvAuthor;
     private TextView tvStatus;
     private TextView tvStats;
     private TextView tvDescription;
+    private TextView tvChapterCount;
+    private TextView tvChapterEmpty;
+    private TextView tvChapterError;
 
     private ImageView ivCover;
     private ProgressBar progressCover;
+    private ProgressBar progressChapters;
 
     private ImageButton btnBack;
     private ImageButton btnFavorite;
     private Button btnReadNow;
 
+    private RecyclerView rvChapters;
+
     private StoryRepository storyRepository;
     private FavoriteRepository favoriteRepository;
+    private ChapterRepository chapterRepository;
+
+    private ChapterAdapter chapterAdapter;
 
     private final ExecutorService executorService =
             Executors.newSingleThreadExecutor();
@@ -73,7 +91,6 @@ public class StoryDetailFragment extends Fragment {
 
         Bundle args = new Bundle();
         args.putString(ARG_STORY_ID, storyId);
-
         fragment.setArguments(args);
 
         return fragment;
@@ -104,11 +121,13 @@ public class StoryDetailFragment extends Fragment {
 
         storyRepository = new StoryRepository(requireContext());
         favoriteRepository = new FavoriteRepository(requireContext());
+        chapterRepository = new ChapterRepository(requireContext());
 
         if (getArguments() != null) {
             storyId = getArguments().getString(ARG_STORY_ID);
         }
 
+        setupChapterList();
         setupListeners(view);
 
         if (storyId == null || storyId.trim().isEmpty()) {
@@ -117,11 +136,11 @@ public class StoryDetailFragment extends Fragment {
                     "Không tìm thấy mã truyện",
                     Toast.LENGTH_SHORT
             ).show();
-
             return;
         }
 
         loadStoryDetail();
+        loadChapters();
         checkFavoriteStatus();
     }
 
@@ -132,12 +151,28 @@ public class StoryDetailFragment extends Fragment {
         tvStats = view.findViewById(R.id.tvStoryStats);
         tvDescription = view.findViewById(R.id.tvStoryDescription);
 
+        tvChapterCount = view.findViewById(R.id.tvChapterCount);
+        tvChapterEmpty = view.findViewById(R.id.tvChapterEmpty);
+        tvChapterError = view.findViewById(R.id.tvChapterError);
+
         ivCover = view.findViewById(R.id.ivStoryCover);
         progressCover = view.findViewById(R.id.progressCover);
+        progressChapters = view.findViewById(R.id.progressChapters);
 
         btnBack = view.findViewById(R.id.btnBack);
         btnFavorite = view.findViewById(R.id.btnFavorite);
         btnReadNow = view.findViewById(R.id.btnReadNow);
+
+        rvChapters = view.findViewById(R.id.rvChapters);
+    }
+
+    private void setupChapterList() {
+        rvChapters.setLayoutManager(
+                new LinearLayoutManager(requireContext())
+        );
+
+        chapterAdapter = new ChapterAdapter(this::openChapter);
+        rvChapters.setAdapter(chapterAdapter);
     }
 
     private void setupListeners(View view) {
@@ -150,44 +185,46 @@ public class StoryDetailFragment extends Fragment {
 
         btnFavorite.setOnClickListener(v -> toggleFavorite());
 
-        btnReadNow.setOnClickListener(v -> {
-            if (storyId == null || storyId.trim().isEmpty()) {
-                return;
-            }
+        btnReadNow.setOnClickListener(v -> openReader(null));
 
-            Bundle args = new Bundle();
-            args.putString(ARG_STORY_ID, storyId);
-
-            NavController navController =
-                    Navigation.findNavController(view);
-
-            navController.navigate(
-                    R.id.action_storyDetailFragment_to_readerFragment,
-                    args
-            );
-        });
+        tvChapterError.setOnClickListener(v -> loadChapters());
     }
 
     private void loadStoryDetail() {
         executorService.execute(() -> {
-            StoryEntity localStory =
-                    storyRepository.getStoryById(storyId);
+            try {
+                StoryEntity localStory =
+                        storyRepository.getStoryById(storyId);
 
-            mainHandler.post(() -> {
-                if (!isAdded() || getView() == null) {
-                    return;
-                }
+                mainHandler.post(() -> {
+                    if (!isAdded() || getView() == null) {
+                        return;
+                    }
 
-                if (localStory != null) {
-                    bindStoryData(localStory);
-                } else {
+                    if (localStory != null) {
+                        bindStoryData(localStory);
+                    } else {
+                        Toast.makeText(
+                                requireContext(),
+                                "Không tìm thấy dữ liệu truyện",
+                                Toast.LENGTH_SHORT
+                        ).show();
+                    }
+                });
+
+            } catch (Exception e) {
+                mainHandler.post(() -> {
+                    if (!isAdded() || getView() == null) {
+                        return;
+                    }
+
                     Toast.makeText(
                             requireContext(),
-                            "Không tìm thấy dữ liệu truyện",
+                            "Không thể tải thông tin truyện",
                             Toast.LENGTH_SHORT
                     ).show();
-                }
-            });
+                });
+            }
         });
     }
 
@@ -254,7 +291,6 @@ public class StoryDetailFragment extends Fragment {
                         if (isAdded() && progressCover != null) {
                             progressCover.setVisibility(View.GONE);
                         }
-
                         return false;
                     }
 
@@ -269,30 +305,123 @@ public class StoryDetailFragment extends Fragment {
                         if (isAdded() && progressCover != null) {
                             progressCover.setVisibility(View.GONE);
                         }
-
                         return false;
                     }
                 })
                 .into(ivCover);
     }
 
+    private void loadChapters() {
+        progressChapters.setVisibility(View.VISIBLE);
+        tvChapterEmpty.setVisibility(View.GONE);
+        tvChapterError.setVisibility(View.GONE);
+        rvChapters.setVisibility(View.GONE);
+
+        chapterRepository.getChaptersFromCacheOrFirestore(
+                storyId,
+                new ChapterRepository.RepositoryCallback<List<ChapterEntity>>() {
+                    @Override
+                    public void onSuccess(List<ChapterEntity> result) {
+                        if (!isAdded() || getView() == null) {
+                            return;
+                        }
+
+                        progressChapters.setVisibility(View.GONE);
+
+                        List<ChapterEntity> chapters =
+                                result == null
+                                        ? new ArrayList<>()
+                                        : new ArrayList<>(result);
+
+                        chapters.sort(
+                                Comparator.comparingInt(
+                                        ChapterEntity::getChapterNumber
+                                )
+                        );
+
+                        tvChapterCount.setText(
+                                chapters.size() + " chương"
+                        );
+
+                        if (chapters.isEmpty()) {
+                            rvChapters.setVisibility(View.GONE);
+                            tvChapterEmpty.setVisibility(View.VISIBLE);
+                            return;
+                        }
+
+                        tvChapterEmpty.setVisibility(View.GONE);
+                        rvChapters.setVisibility(View.VISIBLE);
+                        chapterAdapter.setChapters(chapters);
+                    }
+
+                    @Override
+                    public void onError(Exception e) {
+                        if (!isAdded() || getView() == null) {
+                            return;
+                        }
+
+                        progressChapters.setVisibility(View.GONE);
+                        rvChapters.setVisibility(View.GONE);
+                        tvChapterError.setVisibility(View.VISIBLE);
+                        tvChapterError.setText(
+                                "Không thể tải danh sách chương. Nhấn để thử lại."
+                        );
+                    }
+                }
+        );
+    }
+
+    private void openChapter(ChapterEntity chapter) {
+        if (chapter == null || chapter.getChapterId() == null) {
+            return;
+        }
+
+        openReader(chapter.getChapterId());
+    }
+
+    private void openReader(@Nullable String chapterId) {
+        if (storyId == null || storyId.trim().isEmpty()) {
+            return;
+        }
+
+        Bundle args = new Bundle();
+        args.putString(ARG_STORY_ID, storyId);
+
+        if (chapterId != null && !chapterId.trim().isEmpty()) {
+            args.putString(ARG_CHAPTER_ID, chapterId);
+        }
+
+        NavController navController =
+                Navigation.findNavController(requireView());
+
+        navController.navigate(
+                R.id.action_storyDetailFragment_to_readerFragment,
+                args
+        );
+    }
+
     private void checkFavoriteStatus() {
         String userId = getCurrentUserId();
 
         executorService.execute(() -> {
-            boolean favorite = favoriteRepository.isFavorite(
-                    userId,
-                    storyId
-            );
+            try {
+                boolean favorite = favoriteRepository.isFavorite(
+                        userId,
+                        storyId
+                );
 
-            mainHandler.post(() -> {
-                if (!isAdded() || getView() == null) {
-                    return;
-                }
+                mainHandler.post(() -> {
+                    if (!isAdded() || getView() == null) {
+                        return;
+                    }
 
-                isFav = favorite;
-                updateFavoriteIcon();
-            });
+                    isFav = favorite;
+                    updateFavoriteIcon();
+                });
+
+            } catch (Exception ignored) {
+                // Giữ trạng thái mặc định nếu không kiểm tra được.
+            }
         });
     }
 
@@ -302,6 +431,7 @@ public class StoryDetailFragment extends Fragment {
         }
 
         isFavoriteRequestRunning = true;
+        btnFavorite.setEnabled(false);
 
         String userId = getCurrentUserId();
         boolean shouldRemove = isFav;
@@ -331,6 +461,7 @@ public class StoryDetailFragment extends Fragment {
 
                     isFav = !shouldRemove;
                     isFavoriteRequestRunning = false;
+                    btnFavorite.setEnabled(true);
 
                     updateFavoriteIcon();
 
@@ -350,6 +481,7 @@ public class StoryDetailFragment extends Fragment {
                     }
 
                     isFavoriteRequestRunning = false;
+                    btnFavorite.setEnabled(true);
 
                     Toast.makeText(
                             requireContext(),
@@ -385,7 +517,9 @@ public class StoryDetailFragment extends Fragment {
 
     @Override
     public void onDestroy() {
-        Glide.with(this).clear(ivCover);
+        if (ivCover != null) {
+            Glide.with(this).clear(ivCover);
+        }
 
         executorService.shutdown();
         mainHandler.removeCallbacksAndMessages(null);

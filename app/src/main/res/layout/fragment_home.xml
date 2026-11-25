@@ -1,47 +1,96 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.core.widget.NestedScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.core.widget.NestedScrollView
+    xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#F8F9FA"
-    android:fillViewport="true">
+    android:background="#F8F7FA"
+    android:fillViewport="true"
+    android:clipToPadding="false">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:padding="16dp">
+        android:paddingTop="20dp"
+        android:paddingBottom="28dp">
 
-        <TextView
-            android:layout_width="wrap_content"
+        <!-- Header -->
+        <LinearLayout
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Storyverse"
-            android:textColor="#1A1A2E"
-            android:textSize="24sp"
-            android:textStyle="bold" />
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingHorizontal="20dp">
 
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Khám phá thế giới truyện của bạn"
-            android:textColor="#6C757D"
-            android:textSize="13sp" />
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical">
 
-        <!-- Thanh tìm kiếm nhanh -->
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="STORYVERSE"
+                    android:textColor="#6842B8"
+                    android:textSize="12sp"
+                    android:textStyle="bold"
+                    android:letterSpacing="0.12" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="5dp"
+                    android:text="Khám phá thế giới truyện"
+                    android:textColor="#24212B"
+                    android:textSize="22sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="3dp"
+                    android:text="Một câu chuyện hay đang chờ bạn"
+                    android:textColor="#77727F"
+                    android:textSize="13sp" />
+
+            </LinearLayout>
+
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="46dp"
+                android:layout_height="46dp"
+                app:cardBackgroundColor="#EEE8FA"
+                app:cardCornerRadius="23dp"
+                app:cardElevation="0dp">
+
+                <ImageView
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:contentDescription="Logo STORYVERSE"
+                    android:padding="9dp"
+                    android:scaleType="fitCenter"
+                    android:src="@drawable/logo_storyverse" />
+
+            </com.google.android.material.card.MaterialCardView>
+
+        </LinearLayout>
+
+        <!-- Search -->
         <com.google.android.material.card.MaterialCardView
             android:id="@+id/cardSearchBar"
             android:layout_width="match_parent"
-            android:layout_height="48dp"
-            android:layout_marginTop="16dp"
+            android:layout_height="54dp"
+            android:layout_marginHorizontal="20dp"
+            android:layout_marginTop="22dp"
             android:clickable="true"
             android:focusable="true"
-            android:contentDescription="Mở tìm kiếm truyện"
             android:foreground="?attr/selectableItemBackground"
             app:cardBackgroundColor="#FFFFFF"
-            app:cardCornerRadius="24dp"
-            app:cardElevation="2dp"
-            app:strokeColor="#E9ECEF"
+            app:cardCornerRadius="16dp"
+            app:cardElevation="1dp"
+            app:strokeColor="#EAE6F0"
             app:strokeWidth="1dp">
 
             <LinearLayout
@@ -52,149 +101,286 @@
                 android:paddingHorizontal="16dp">
 
                 <ImageView
-                    android:layout_width="20dp"
-                    android:layout_height="20dp"
+                    android:layout_width="22dp"
+                    android:layout_height="22dp"
                     android:contentDescription="Tìm kiếm"
                     android:src="@android:drawable/ic_menu_search"
-                    app:tint="#7564E8" />
+                    app:tint="#7954C7" />
 
                 <TextView
-                    android:layout_width="wrap_content"
+                    android:layout_width="0dp"
                     android:layout_height="wrap_content"
-                    android:layout_marginStart="10dp"
-                    android:text="Tìm tên truyện, tác giả..."
-                    android:textColor="#ADB5BD"
-                    android:textSize="14sp" />
+                    android:layout_marginStart="12dp"
+                    android:layout_weight="1"
+                    android:text="Tìm truyện, tác giả, thể loại..."
+                    android:textColor="#9993A1"
+                    android:textSize="13sp" />
 
             </LinearLayout>
 
         </com.google.android.material.card.MaterialCardView>
 
-        <!-- Lịch sử tìm kiếm gần đây -->
+        <!-- Recent searches -->
         <LinearLayout
             android:id="@+id/layoutRecentSearch"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="12dp"
+            android:layout_marginTop="22dp"
             android:orientation="vertical"
-            android:visibility="gone">
+            android:paddingHorizontal="20dp"
+            android:visibility="gone"
+            tools:visibility="visible">
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Tìm kiếm gần đây"
-                android:textColor="#6C757D"
-                android:textSize="12sp"
+                android:textColor="#24212B"
+                android:textSize="15sp"
                 android:textStyle="bold" />
 
             <HorizontalScrollView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="4dp"
+                android:layout_marginTop="10dp"
                 android:scrollbars="none">
 
                 <com.google.android.material.chip.ChipGroup
                     android:id="@+id/chipGroupRecentSearch"
                     android:layout_width="wrap_content"
-                    android:layout_height="wrap_content" />
+                    android:layout_height="wrap_content"
+                    app:chipSpacingHorizontal="8dp"
+                    app:singleLine="true" />
 
             </HorizontalScrollView>
 
         </LinearLayout>
 
-        <!-- Bộ lọc thể loại -->
-        <HorizontalScrollView
+        <!-- Categories -->
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="14dp"
-            android:scrollbars="none">
+            android:layout_marginTop="26dp"
+            android:orientation="vertical">
 
-            <com.google.android.material.chip.ChipGroup
-                android:id="@+id/chipGroupGenre"
+            <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                app:selectionRequired="true"
-                app:singleSelection="true">
+                android:paddingHorizontal="20dp"
+                android:text="Thể loại truyện"
+                android:textColor="#24212B"
+                android:textSize="17sp"
+                android:textStyle="bold" />
 
-                <com.google.android.material.chip.Chip
-                    android:id="@+id/chipAll"
+            <HorizontalScrollView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:paddingHorizontal="20dp"
+                android:scrollbars="none">
+
+                <com.google.android.material.chip.ChipGroup
+                    android:id="@+id/chipGroupGenre"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:checkable="true"
-                    android:checked="true"
-                    android:text="Tất cả" />
+                    app:chipSpacingHorizontal="8dp"
+                    app:singleLine="true"
+                    app:selectionRequired="true"
+                    app:singleSelection="true">
 
-                <com.google.android.material.chip.Chip
-                    android:id="@+id/chipTienHiep"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:checkable="true"
-                    android:text="Tiên Hiệp" />
+                    <com.google.android.material.chip.Chip
+                        android:id="@+id/chipAll"
+                        style="@style/Widget.MaterialComponents.Chip.Choice"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:checked="true"
+                        android:text="Tất cả" />
 
-                <com.google.android.material.chip.Chip
-                    android:id="@+id/chipNgonTinh"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:checkable="true"
-                    android:text="Ngôn Tình" />
+                    <com.google.android.material.chip.Chip
+                        android:id="@+id/chipTienHiep"
+                        style="@style/Widget.MaterialComponents.Chip.Choice"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Tiên hiệp" />
 
-                <com.google.android.material.chip.Chip
-                    android:id="@+id/chipTrinhTham"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:checkable="true"
-                    android:text="Trinh Thám" />
+                    <com.google.android.material.chip.Chip
+                        android:id="@+id/chipNgonTinh"
+                        style="@style/Widget.MaterialComponents.Chip.Choice"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Ngôn tình" />
 
-                <com.google.android.material.chip.Chip
-                    android:id="@+id/chipSciFi"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:checkable="true"
-                    android:text="Sci-Fi" />
+                    <com.google.android.material.chip.Chip
+                        android:id="@+id/chipTrinhTham"
+                        style="@style/Widget.MaterialComponents.Chip.Choice"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Trinh thám" />
 
-            </com.google.android.material.chip.ChipGroup>
+                </com.google.android.material.chip.ChipGroup>
 
-        </HorizontalScrollView>
+            </HorizontalScrollView>
 
-        <!-- Truyện nổi bật -->
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
-            android:text="Truyện nổi bật"
-            android:textColor="#1A1A2E"
-            android:textSize="18sp"
-            android:textStyle="bold" />
+        </LinearLayout>
 
-        <androidx.recyclerview.widget.RecyclerView
-            android:id="@+id/rvFeaturedStories"
+        <!-- Featured stories -->
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="10dp"
-            android:orientation="horizontal"
-            app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
-            tools:itemCount="3"
-            tools:listitem="@layout/item_story_featured" />
+            android:layout_marginTop="26dp"
+            android:orientation="vertical">
 
-        <!-- Danh sách đề xuất -->
-        <TextView
-            android:id="@+id/tvSectionListTitle"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="20dp"
-            android:text="Đề xuất cho bạn"
-            android:textColor="#1A1A2E"
-            android:textSize="18sp"
-            android:textStyle="bold" />
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical"
+                android:paddingHorizontal="20dp">
 
-        <androidx.recyclerview.widget.RecyclerView
-            android:id="@+id/rvAllStories"
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Truyện nổi bật"
+                    android:textColor="#24212B"
+                    android:textSize="17sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Khám phá"
+                    android:textColor="#7954C7"
+                    android:textSize="12sp"
+                    android:textStyle="bold" />
+
+            </LinearLayout>
+
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/rvFeaturedStories"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="13dp"
+                android:clipToPadding="false"
+                android:nestedScrollingEnabled="false"
+                android:paddingHorizontal="20dp"
+                tools:itemCount="3"
+                tools:listitem="@layout/item_story_featured" />
+
+        </LinearLayout>
+
+        <!-- Recommended stories -->
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="10dp"
-            android:nestedScrollingEnabled="false"
-            tools:itemCount="3"
-            tools:listitem="@layout/item_story_vertical" />
+            android:layout_marginTop="28dp"
+            android:orientation="vertical">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical"
+                android:paddingHorizontal="20dp">
+
+                <TextView
+                    android:id="@+id/tvSectionListTitle"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Đề xuất cho bạn"
+                    android:textColor="#24212B"
+                    android:textSize="17sp"
+                    android:textStyle="bold" />
+
+            </LinearLayout>
+
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/rvAllStories"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="13dp"
+                android:nestedScrollingEnabled="false"
+                android:paddingHorizontal="20dp"
+                tools:itemCount="4"
+                tools:listitem="@layout/item_story_vertical" />
+
+            <!-- Empty state -->
+            <LinearLayout
+                android:id="@+id/layoutHomeEmpty"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center"
+                android:orientation="vertical"
+                android:paddingHorizontal="32dp"
+                android:paddingVertical="32dp"
+                android:visibility="gone">
+
+                <ImageView
+                    android:layout_width="64dp"
+                    android:layout_height="64dp"
+                    android:contentDescription="Không có truyện"
+                    android:src="@android:drawable/ic_menu_gallery"
+                    app:tint="#B8A8D8" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:text="Chưa có truyện nào"
+                    android:textColor="#24212B"
+                    android:textSize="15sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="5dp"
+                    android:gravity="center"
+                    android:text="Hãy quay lại sau để khám phá những câu chuyện mới nhé."
+                    android:textColor="#77727F"
+                    android:textSize="12sp" />
+
+            </LinearLayout>
+
+            <!-- Loading state -->
+            <ProgressBar
+                android:id="@+id/progressHome"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:layout_gravity="center"
+                android:layout_marginVertical="24dp"
+                android:indeterminateTint="#6842B8"
+                android:visibility="gone" />
+
+            <!-- Error state -->
+            <LinearLayout
+                android:id="@+id/layoutHomeError"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center"
+                android:orientation="vertical"
+                android:padding="24dp"
+                android:visibility="gone">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Không thể tải dữ liệu"
+                    android:textColor="#D94F64"
+                    android:textSize="14sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="5dp"
+                    android:gravity="center"
+                    android:text="Vui lòng kiểm tra kết nối và thử lại."
+                    android:textColor="#77727F"
+                    android:textSize="12sp" />
+
+            </LinearLayout>
+
+        </LinearLayout>
 
     </LinearLayout>
 

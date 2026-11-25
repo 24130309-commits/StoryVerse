@@ -4,23 +4,25 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#FAF9FF"
+    android:background="#F8F7FA"
     android:fillViewport="true"
+    android:clipToPadding="false"
     tools:context=".ui.story.StoryDetailFragment">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:padding="18dp">
+        android:paddingStart="20dp"
+        android:paddingEnd="20dp"
+        android:paddingTop="16dp"
+        android:paddingBottom="28dp">
 
-        <!-- Thanh tiêu đề -->
+        <!-- Toolbar -->
         <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:gravity="center_vertical"
-            android:orientation="horizontal"
-            android:paddingBottom="20dp">
+            android:layout_height="52dp"
+            android:gravity="center_vertical">
 
             <ImageButton
                 android:id="@+id/btnBack"
@@ -30,7 +32,7 @@
                 android:contentDescription="Quay lại"
                 android:padding="11dp"
                 android:src="@drawable/ic_arrow_back_24"
-                app:tint="#352A75" />
+                app:tint="#6842B8" />
 
             <TextView
                 android:layout_width="0dp"
@@ -38,23 +40,27 @@
                 android:layout_marginStart="14dp"
                 android:layout_weight="1"
                 android:text="Chi tiết truyện"
-                android:textColor="#211B45"
-                android:textSize="19sp"
+                android:textColor="#24212B"
+                android:textSize="20sp"
                 android:textStyle="bold" />
 
         </LinearLayout>
 
-        <!-- Ảnh bìa và thông tin -->
+        <!-- Story information card -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:gravity="center_vertical"
-            android:orientation="horizontal">
+            android:layout_marginTop="18dp"
+            android:background="@drawable/bg_story_detail_card"
+            android:elevation="2dp"
+            android:orientation="horizontal"
+            android:padding="16dp">
 
             <FrameLayout
-                android:layout_width="120dp"
-                android:layout_height="170dp"
-                android:background="#EEEAFB">
+                android:layout_width="112dp"
+                android:layout_height="160dp"
+                android:background="#EEEAF6"
+                android:clipToOutline="true">
 
                 <ImageView
                     android:id="@+id/ivStoryCover"
@@ -67,10 +73,10 @@
                 <ProgressBar
                     android:id="@+id/progressCover"
                     style="?android:attr/progressBarStyle"
-                    android:layout_width="32dp"
-                    android:layout_height="32dp"
+                    android:layout_width="30dp"
+                    android:layout_height="30dp"
                     android:layout_gravity="center"
-                    android:indeterminateTint="#6C55D9"
+                    android:indeterminateTint="#6842B8"
                     android:visibility="gone" />
 
             </FrameLayout>
@@ -78,6 +84,7 @@
             <LinearLayout
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
+                android:layout_gravity="center_vertical"
                 android:layout_marginStart="16dp"
                 android:layout_weight="1"
                 android:orientation="vertical">
@@ -86,60 +93,66 @@
                     android:id="@+id/tvStoryTitle"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
+                    android:ellipsize="end"
+                    android:maxLines="3"
                     android:text="Đang tải tên truyện..."
-                    android:textColor="#211B45"
-                    android:textSize="20sp"
+                    android:textColor="#24212B"
+                    android:textSize="19sp"
                     android:textStyle="bold" />
 
                 <TextView
                     android:id="@+id/tvStoryAuthor"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="8dp"
+                    android:layout_marginTop="9dp"
+                    android:ellipsize="end"
+                    android:maxLines="2"
                     android:text="Tác giả: Đang cập nhật"
-                    android:textColor="#77738A"
-                    android:textSize="14sp" />
+                    android:textColor="#77727F"
+                    android:textSize="13sp" />
 
                 <TextView
                     android:id="@+id/tvStoryStatus"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="10dp"
-                    android:background="#EEEAFE"
-                    android:paddingHorizontal="10dp"
-                    android:paddingVertical="5dp"
+                    android:layout_marginTop="12dp"
+                    android:background="@drawable/bg_story_status"
+                    android:paddingStart="11dp"
+                    android:paddingEnd="11dp"
+                    android:paddingTop="6dp"
+                    android:paddingBottom="6dp"
                     android:text="Đang phát hành"
-                    android:textColor="#5B45C5"
-                    android:textSize="12sp"
+                    android:textColor="#6842B8"
+                    android:textSize="11sp"
                     android:textStyle="bold" />
 
                 <TextView
                     android:id="@+id/tvStoryStats"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="12dp"
+                    android:layout_marginTop="13dp"
                     android:text="0 chương • 0 lượt thích"
-                    android:textColor="#77738A"
-                    android:textSize="13sp" />
+                    android:textColor="#77727F"
+                    android:textSize="12sp" />
 
             </LinearLayout>
 
         </LinearLayout>
 
-        <!-- Nút hành động -->
+        <!-- Actions -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="24dp"
-            android:gravity="center_vertical"
-            android:orientation="horizontal">
+            android:layout_marginTop="18dp"
+            android:gravity="center_vertical">
 
             <Button
                 android:id="@+id/btnReadNow"
                 android:layout_width="0dp"
-                android:layout_height="50dp"
+                android:layout_height="52dp"
                 android:layout_weight="1"
-                android:backgroundTint="#5B45C5"
+                android:backgroundTint="#6842B8"
+                android:minHeight="52dp"
                 android:text="Đọc truyện ngay"
                 android:textAllCaps="false"
                 android:textColor="#FFFFFF"
@@ -148,36 +161,147 @@
 
             <ImageButton
                 android:id="@+id/btnFavorite"
-                android:layout_width="50dp"
-                android:layout_height="50dp"
+                android:layout_width="52dp"
+                android:layout_height="52dp"
                 android:layout_marginStart="12dp"
                 android:background="@drawable/bg_favorite_button"
-                android:contentDescription="Yêu thích"
-                android:padding="13dp"
+                android:contentDescription="Thêm vào yêu thích"
+                android:padding="14dp"
                 android:src="@drawable/ic_favorite_outline"
-                app:tint="#6C55D9" />
+                app:tint="#6842B8" />
 
         </LinearLayout>
 
-        <!-- Giới thiệu -->
-        <TextView
+        <!-- Description -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="26dp"
+            android:background="@drawable/bg_story_detail_card"
+            android:orientation="vertical"
+            android:padding="18dp">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Giới thiệu nội dung"
+                android:textColor="#24212B"
+                android:textSize="18sp"
+                android:textStyle="bold" />
+
+            <View
+                android:layout_width="38dp"
+                android:layout_height="3dp"
+                android:layout_marginTop="9dp"
+                android:background="#8B6BD1" />
+
+            <TextView
+                android:id="@+id/tvStoryDescription"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="14dp"
+                android:lineSpacingExtra="5dp"
+                android:text="Chưa có mô tả cho truyện này."
+                android:textColor="#55515D"
+                android:textSize="14sp" />
+
+        </LinearLayout>
+
+        <!-- Chapter section -->
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="28dp"
-            android:text="Giới thiệu nội dung"
-            android:textColor="#211B45"
-            android:textSize="17sp"
-            android:textStyle="bold" />
+            android:gravity="center_vertical">
 
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Danh sách chương"
+                    android:textColor="#24212B"
+                    android:textSize="18sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:text="Chọn chương để bắt đầu đọc"
+                    android:textColor="#99939F"
+                    android:textSize="12sp" />
+
+            </LinearLayout>
+
+            <TextView
+                android:id="@+id/tvChapterCount"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:background="@drawable/bg_story_status"
+                android:paddingStart="11dp"
+                android:paddingEnd="11dp"
+                android:paddingTop="6dp"
+                android:paddingBottom="6dp"
+                android:text="0 chương"
+                android:textColor="#6842B8"
+                android:textSize="12sp"
+                android:textStyle="bold" />
+
+        </LinearLayout>
+
+        <!-- Chapter loading -->
+        <ProgressBar
+            android:id="@+id/progressChapters"
+            style="?android:attr/progressBarStyle"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:layout_gravity="center_horizontal"
+            android:layout_marginTop="24dp"
+            android:indeterminateTint="#6842B8"
+            android:visibility="gone" />
+
+        <!-- Chapter empty -->
         <TextView
-            android:id="@+id/tvStoryDescription"
+            android:id="@+id/tvChapterEmpty"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="10dp"
-            android:lineSpacingExtra="5dp"
-            android:text="Chưa có mô tả cho truyện này."
-            android:textColor="#555166"
-            android:textSize="14sp" />
+            android:layout_marginTop="14dp"
+            android:background="@drawable/bg_story_detail_card"
+            android:gravity="center"
+            android:padding="24dp"
+            android:text="Truyện chưa có chương nào."
+            android:textColor="#77727F"
+            android:textSize="14sp"
+            android:visibility="gone" />
+
+        <!-- Chapter error -->
+        <TextView
+            android:id="@+id/tvChapterError"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="14dp"
+            android:background="@drawable/bg_story_detail_card"
+            android:gravity="center"
+            android:padding="24dp"
+            android:text="Không thể tải danh sách chương."
+            android:textColor="#D94F64"
+            android:textSize="14sp"
+            android:visibility="gone" />
+
+        <!-- Chapter list -->
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/rvChapters"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="14dp"
+            android:nestedScrollingEnabled="false"
+            android:overScrollMode="never"
+            tools:listitem="@layout/item_chapter" />
 
     </LinearLayout>
 
