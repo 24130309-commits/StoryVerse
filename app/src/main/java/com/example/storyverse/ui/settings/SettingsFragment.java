@@ -1,5 +1,7 @@
 package com.example.storyverse.ui.settings;
 
+import android.content.Context;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -13,6 +15,7 @@ import androidx.appcompat.app.AppCompatDelegate;
 import androidx.fragment.app.Fragment;
 
 import com.example.storyverse.R;
+import com.example.storyverse.data.remote.firebase.FirebaseMessagingManager;
 import com.google.android.material.switchmaterial.SwitchMaterial;
 
 public class SettingsFragment extends Fragment {
@@ -40,6 +43,13 @@ public class SettingsFragment extends Fragment {
         btnChangePassword = view.findViewById(R.id.btnChangePassword);
         btnAbout = view.findViewById(R.id.btnAbout);
 
+        SharedPreferences sharedPreferences = requireContext().getSharedPreferences("app_preferences", Context.MODE_PRIVATE);
+        boolean isDarkMode = sharedPreferences.getBoolean("dark_mode", false);
+        boolean isNotificationEnabled = sharedPreferences.getBoolean("notifications", false);
+
+        switchDarkMode.setChecked(isDarkMode);
+        switchNotification.setChecked(isNotificationEnabled);
+
         if (switchDarkMode != null) {
             switchDarkMode.setOnCheckedChangeListener((buttonView, isChecked) -> {
                 if (isChecked) {
@@ -49,6 +59,7 @@ public class SettingsFragment extends Fragment {
                     AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO);
                     Toast.makeText(getContext(), "Đã tắt Chế độ tối", Toast.LENGTH_SHORT).show();
                 }
+                sharedPreferences.edit().putBoolean("dark_mode", isChecked).apply();
             });
         }
 
@@ -56,6 +67,14 @@ public class SettingsFragment extends Fragment {
             switchNotification.setOnCheckedChangeListener((buttonView, isChecked) -> {
                 String status = isChecked ? "Đã bật thông báo" : "Đã tắt thông báo";
                 Toast.makeText(getContext(), status, Toast.LENGTH_SHORT).show();
+                sharedPreferences.edit().putBoolean("notifications", isChecked).apply();
+
+                FirebaseMessagingManager firebaseMessagingManager = new FirebaseMessagingManager();
+                if (isChecked) {
+                    firebaseMessagingManager.subscribeToTopic("all");
+                } else {
+                    firebaseMessagingManager.unsubscribeFromTopic("all");
+                }
             });
         }
 

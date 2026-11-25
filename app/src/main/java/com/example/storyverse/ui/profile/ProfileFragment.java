@@ -25,6 +25,7 @@ public class ProfileFragment extends Fragment {
     private EditText etProfileEmail;
     private Button btnUpdateProfile;
     private Button btnLogout;
+    private Button btnNotifications;
     private FirebaseAuthManager authManager;
 
     public ProfileFragment() {
@@ -50,6 +51,7 @@ public class ProfileFragment extends Fragment {
         etProfileEmail = view.findViewById(R.id.etProfileEmail);
         btnUpdateProfile = view.findViewById(R.id.btnUpdateProfile);
         btnLogout = view.findViewById(R.id.btnLogout);
+        btnNotifications = view.findViewById(R.id.btnNotifications);
 
         loadUserData();
 
@@ -59,6 +61,10 @@ public class ProfileFragment extends Fragment {
 
         if (btnLogout != null) {
             btnLogout.setOnClickListener(v -> handleLogout(v));
+        }
+
+        if (btnNotifications != null) {
+            btnNotifications.setOnClickListener(v -> handleNotifications());
         }
     }
 
@@ -111,5 +117,9 @@ public class ProfileFragment extends Fragment {
         }
         Toast.makeText(getContext(), "Đã đăng xuất!", Toast.LENGTH_SHORT).show();
         Navigation.findNavController(view).navigate(R.id.action_profileFragment_to_loginFragment);
+    }
+
+    private void handleNotifications() {
+        Navigation.findNavController(requireView()).navigate(R.id.action_profileFragment_to_notificationFragment);
     }
 }

@@ -60,4 +60,11 @@
         android:text="Đăng xuất"
         android:backgroundTint="#D32F2F" />
 
+    <Button
+        android:id="@+id/btnNotifications"
+        android:layout_width="match_parent"
+        android:layout_height="50dp"
+        android:text="Thông báo"
+        android:layout_marginBottom="12dp" />
+
 </LinearLayout>

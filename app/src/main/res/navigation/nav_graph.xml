@@ -57,6 +57,9 @@
             app:destination="@id/loginFragment"
             app:popUpTo="@id/nav_graph"
             app:popUpToInclusive="true" />
+        <action
+            android:id="@+id/action_profileFragment_to_notificationFragment"
+            app:destination="@id/notificationFragment" />
     </fragment>
 
     <fragment
@@ -130,4 +133,10 @@
             android:id="@+id/action_storyDetailFragment_to_communityFragment"
             app:destination="@id/communityFragment" />
     </fragment>
+
+    <fragment
+        android:id="@+id/notificationFragment"
+        android:name="com.example.storyverse.ui.notification.NotificationFragment"
+        android:label="Thông báo"
+        tools:layout="@layout/fragment_notifications" />
 </navigation>

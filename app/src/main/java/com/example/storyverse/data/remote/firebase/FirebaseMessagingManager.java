@@ -1,4 +1,3 @@
-
 package com.example.storyverse.data.remote.firebase;
 
 import com.google.firebase.messaging.FirebaseMessaging;
@@ -91,6 +90,10 @@ public class FirebaseMessagingManager {
                 });
     }
 
+    public void subscribeToTopic(String topic) {
+        subscribeToTopic(topic, null);
+    }
+
     // 3. Hủy đăng ký Topic
     public void unsubscribeFromTopic(
             String topic,
@@ -119,6 +122,10 @@ public class FirebaseMessagingManager {
                         );
                     }
                 });
+    }
+
+    public void unsubscribeFromTopic(String topic) {
+        unsubscribeFromTopic(topic, null);
     }
 
     // Xử lý lỗi
