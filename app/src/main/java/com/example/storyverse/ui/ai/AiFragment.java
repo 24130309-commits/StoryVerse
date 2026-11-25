@@ -1,66 +1,90 @@
 package com.example.storyverse.ui.ai;
 
 import android.os.Bundle;
-
-import androidx.fragment.app.Fragment;
-
+import android.text.TextUtils;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Button;
+import android.widget.EditText;
+import android.widget.ScrollView;
+import android.widget.TextView;
+
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.fragment.app.Fragment;
 
 import com.example.storyverse.R;
 
-/**
- * A simple {@link Fragment} subclass.
- * Use the {@link AiFragment#newInstance} factory method to
- * create an instance of this fragment.
- */
-public class  AiFragment extends Fragment {
+import java.util.Locale;
 
-    // TODO: Rename parameter arguments, choose names that match
-    // the fragment initialization parameters, e.g. ARG_ITEM_NUMBER
-    private static final String ARG_PARAM1 = "param1";
-    private static final String ARG_PARAM2 = "param2";
+public class AiFragment extends Fragment {
 
-    // TODO: Rename and change types of parameters
-    private String mParam1;
-    private String mParam2;
-
-    public AiFragment() {
-        // Required empty public constructor
-    }
-
-    /**
-     * Use this factory method to create a new instance of
-     * this fragment using the provided parameters.
-     *
-     * @param param1 Parameter 1.
-     * @param param2 Parameter 2.
-     * @return A new instance of fragment AiFragment.
-     */
-    // TODO: Rename and change types and number of parameters
-    public static AiFragment newInstance(String param1, String param2) {
-        AiFragment fragment = new AiFragment();
-        Bundle args = new Bundle();
-        args.putString(ARG_PARAM1, param1);
-        args.putString(ARG_PARAM2, param2);
-        fragment.setArguments(args);
-        return fragment;
-    }
+    private TextView tvChat;
+    private EditText etQuestion;
+    private ScrollView svChat;
 
     @Override
-    public void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        if (getArguments() != null) {
-            mParam1 = getArguments().getString(ARG_PARAM1);
-            mParam2 = getArguments().getString(ARG_PARAM2);
-        }
-    }
-
-    @Override
-    public View onCreateView(LayoutInflater inflater, ViewGroup container,
+    public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
-        // Inflate the layout for this fragment
         return inflater.inflate(R.layout.fragment_ai, container, false);
+    }
+
+    @Override
+    public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
+
+        tvChat = view.findViewById(R.id.tvAiChat);
+        etQuestion = view.findViewById(R.id.etAiQuestion);
+        svChat = view.findViewById(R.id.svAiChat);
+        Button btnSend = view.findViewById(R.id.btnAiSend);
+
+        btnSend.setOnClickListener(v -> sendQuestion());
+    }
+
+    private void sendQuestion() {
+        String question = etQuestion.getText().toString().trim();
+        if (TextUtils.isEmpty(question)) {
+            etQuestion.setError("Hãy nhập câu hỏi");
+            etQuestion.requestFocus();
+            return;
+        }
+
+        String answer = generateAnswer(question);
+        tvChat.append("\n\nBạn: " + question);
+        tvChat.append("\nAI: " + answer);
+        etQuestion.setText("");
+
+        svChat.post(() -> svChat.fullScroll(View.FOCUS_DOWN));
+    }
+
+    private String generateAnswer(String question) {
+        String text = question.toLowerCase(Locale.ROOT);
+
+        if (text.contains("tình cảm") || text.contains("tình yêu") || text.contains("ngôn tình") || text.contains("lãng mạn")) {
+            return "Bạn có thể thử các truyện tình cảm/ngôn tình. Gợi ý: chọn truyện có chủ đề tình yêu, gia đình hoặc cuộc sống để đọc thư giãn.";
+        }
+
+        if (text.contains("hài") || text.contains("cười") || text.contains("vui")) {
+            return "Bạn thích truyện hài hước. Hãy mở mục Khám phá, chọn thể loại Hài hước và bắt đầu bằng truyện có số lượt thích cao.";
+        }
+
+        if (text.contains("trinh thám") || text.contains("bí ẩn") || text.contains("ma")) {
+            return "Bạn phù hợp với truyện trinh thám hoặc bí ẩn. Hãy tìm truyện có mô tả về điều tra, vụ án, huyền bí hoặc siêu nhiên.";
+        }
+
+        if (text.contains("phiêu lưu") || text.contains("hành động") || text.contains("tu tiên") || text.contains("tiên hiệp")) {
+            return "Bạn có thể đọc truyện phiêu lưu, hành động, kiếm hiệp hoặc tiên hiệp. Gợi ý: xem truyện đang hot và đọc thử chương đầu.";
+        }
+
+        if (text.contains("ngắn") || text.contains("ít thời gian")) {
+            return "Hãy chọn truyện ngắn hoặc truyện có số chương ít. Bạn có thể xem mục Thư viện để lưu truyện đang đọc và tiếp tục sau.";
+        }
+
+        if (text.contains("xin chào") || text.contains("chào") || text.contains("hi")) {
+            return "Xin chào! Tôi có thể gợi ý truyện theo thể loại: tình cảm, hài hước, trinh thám, phiêu lưu hoặc truyện ngắn.";
+        }
+
+        return "Mình chưa hiểu rõ thể loại bạn muốn. Thử nhập: ‘gợi ý truyện tình cảm’, ‘truyện hài hước’, ‘trinh thám’ hoặc ‘phiêu lưu’ nhé!";
     }
 }

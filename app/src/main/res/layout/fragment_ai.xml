@@ -1,14 +1,61 @@
 <?xml version="1.0" encoding="utf-8"?>
-<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="16dp"
+    android:background="@android:color/white"
     tools:context=".ui.ai.AiFragment">
 
-    <!-- TODO: Update blank fragment layout -->
     <TextView
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:text="@string/hello_blank_fragment" />
+        android:layout_height="wrap_content"
+        android:text="Trợ lý gợi ý truyện"
+        android:textSize="20sp"
+        android:textStyle="bold"
+        android:textColor="#212121"
+        android:layout_marginBottom="12dp" />
 
-</FrameLayout>
+    <ScrollView
+        android:id="@+id/svAiChat"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:fillViewport="true">
+
+        <TextView
+            android:id="@+id/tvAiChat"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="AI: Xin chào! Bạn muốn đọc truyện thể loại nào? Ví dụ: tình cảm, hài hước, trinh thám hoặc phiêu lưu."
+            android:textSize="16sp"
+            android:textColor="#424242"
+            android:lineSpacingExtra="4dp" />
+    </ScrollView>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_marginTop="8dp"
+        android:gravity="center_vertical">
+
+        <EditText
+            android:id="@+id/etAiQuestion"
+            android:layout_width="0dp"
+            android:layout_height="48dp"
+            android:layout_weight="1"
+            android:hint="Nhập câu hỏi..."
+            android:inputType="text"
+            android:padding="12dp"
+            android:background="@android:drawable/edit_text" />
+
+        <Button
+            android:id="@+id/btnAiSend"
+            android:layout_width="wrap_content"
+            android:layout_height="48dp"
+            android:layout_marginStart="8dp"
+            android:text="Gửi" />
+    </LinearLayout>
+</LinearLayout>
